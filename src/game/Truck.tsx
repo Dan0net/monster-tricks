@@ -46,8 +46,14 @@ function buildEllipsoidPoints(rx: number, ry: number, rz: number): Float32Array 
 
 export const truckBody = { current: null as RapierRigidBody | null }
 
+const wheelWorld = new THREE.Vector3()
+const chassisP = new THREE.Vector3()
+const chassisQ = new THREE.Quaternion()
+const invChassisQ = new THREE.Quaternion()
+const wheelLocal = new THREE.Vector3()
+
 export function Truck() {
-  const { world } = useRapier()
+  const { rapier, world } = useRapier()
   const chassisRef = useRef<RapierRigidBody>(null!)
   const ctrlRef = useRef<RAPIER.DynamicRayCastVehicleController | null>(null)
   const wheelRefs = useRef<(THREE.Group | null)[]>([])
@@ -55,6 +61,10 @@ export function Truck() {
   const cabMeshRef = useRef<THREE.Mesh>(null!)
   const bodyMeshRef = useRef<THREE.Mesh>(null!)
   const applied = useRef(0)
+  const groundRay = useMemo(
+    () => new rapier.Ray({ x: 0, y: 0, z: 0 }, { x: 0, y: -1, z: 0 }),
+    [rapier],
+  )
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -144,9 +154,17 @@ export function Truck() {
 
   useAfterPhysicsStep(() => {
     const ctrl = ctrlRef.current
-    if (!ctrl) return
+    const chassis = chassisRef.current
+    if (!ctrl || !chassis) return
     ctrl.updateVehicle(0)
     const t = config.truck
+
+    const ct = chassis.translation()
+    const cq = chassis.rotation()
+    chassisP.set(ct.x, ct.y, ct.z)
+    chassisQ.set(cq.x, cq.y, cq.z, cq.w)
+    invChassisQ.copy(chassisQ).invert()
+
     for (let i = 0; i < wheelCount; i++) {
       const g = wheelRefs.current[i]
       if (!g) continue
@@ -155,6 +173,20 @@ export function Truck() {
       g.position.set(cp.x, cp.y - sus, cp.z)
       g.rotation.set(ctrl.wheelRotation(i) ?? 0, ctrl.wheelSteering(i) ?? 0, 0, 'YXZ')
       g.scale.set(t.wheelWidth, t.wheelRadius, t.wheelRadius)
+
+      wheelWorld.copy(g.position).applyQuaternion(chassisQ).add(chassisP)
+      const originY = wheelWorld.y + t.wheelRadius
+      groundRay.origin.x = wheelWorld.x
+      groundRay.origin.y = originY
+      groundRay.origin.z = wheelWorld.z
+      const hit = world.castRay(groundRay, t.wheelRadius * 2, true, undefined, undefined, undefined, chassis)
+      if (hit) {
+        const minCenterY = originY - hit.timeOfImpact + t.wheelRadius
+        if (wheelWorld.y < minCenterY) {
+          wheelLocal.set(wheelWorld.x, minCenterY, wheelWorld.z).sub(chassisP).applyQuaternion(invChassisQ)
+          g.position.copy(wheelLocal)
+        }
+      }
     }
   })
 
