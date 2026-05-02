@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useGame } from './store'
 import { Game } from './game/Game'
+import { TunePanel } from './game/TunePanel'
 
 export default function App() {
   const phase = useGame((s) => s.phase)
@@ -16,20 +17,24 @@ export default function App() {
   }, [end])
 
   const onPlay = async () => {
-    start()
     await document.body.requestPointerLock?.().catch(() => {})
+    start()
   }
 
-  return phase === 'menu' ? (
-    <div className="menu">
-      <div className="menu-inner">
-        <p className="sub">Monster</p>
-        <h1>Tricks</h1>
-        <button className="play" onClick={onPlay}>Play</button>
-      </div>
-      <div className="hint">WASD / Arrows · Mouse to look · Esc to exit</div>
-    </div>
-  ) : (
-    <Game />
+  return (
+    <>
+      <Game />
+      <TunePanel />
+      {phase === 'menu' && (
+        <div className="menu">
+          <div className="menu-inner">
+            <p className="sub">Monster</p>
+            <h1>Tricks</h1>
+            <button className="play" onClick={onPlay}>Play</button>
+          </div>
+          <div className="hint">WASD / Arrows · Mouse to look · Esc to exit</div>
+        </div>
+      )}
+    </>
   )
 }

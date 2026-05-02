@@ -14,6 +14,6 @@ export const useGame = create<State>((set) => ({
   phase: 'menu',
   score: 0,
   multiplier: 1,
-  start: () => set({ phase: 'playing', score: 0, multiplier: 1 }),
+  start: () => set({ phase: 'playing' }),
   end: () => set({ phase: 'menu' }),
 }))

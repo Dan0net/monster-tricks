@@ -1,5 +1,7 @@
+export type Vec3 = [number, number, number]
+
 export const config = {
-  gravity: [0, -30, 0] as [number, number, number],
+  gravity: [0, -30, 0] as Vec3,
   ground: { size: 400, color: '#0b0b14' },
   fog: { color: '#06060c', near: 30, far: 220 },
 
@@ -17,8 +19,8 @@ export const config = {
 
   truck: {
     mass: 160,
-    chassis: [2.2, 0.7, 4.0] as [number, number, number],
-    spawn: [0, 3, 0] as [number, number, number],
+    chassis: [2.2, 0.7, 4.0] as Vec3,
+    spawn: [0, 3, 0] as Vec3,
     color: '#ff2d6f',
     centerOfMass: { x: 0, y: -0.35, z: 0 },
     principalAngularInertia: { x: 380, y: 280, z: 80 },
@@ -45,6 +47,12 @@ export const config = {
       { x:  1.2, y: -0.05, z: -1.55 },
       { x: -1.2, y: -0.05, z: -1.55 },
     ],
-    steerWheels: [0, 1],
+    steerWheels: [0, 1] as number[],
   },
-} as const
+}
+
+export type TruckTunable =
+  | 'engineForce' | 'accelRate' | 'reverseScale' | 'brakeForce' | 'maxSteer'
+  | 'stiffness' | 'compression' | 'relaxation' | 'maxTravel' | 'suspensionRest'
+  | 'frictionSlip' | 'linearDamping' | 'angularDamping'
+  | 'wheelRadius' | 'wheelWidth'

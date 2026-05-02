@@ -11,6 +11,7 @@ import type RAPIER from '@dimforge/rapier3d-compat'
 import * as THREE from 'three'
 import { config } from '../config'
 import { input } from '../systems/input'
+import { useGame } from '../store'
 
 const susDir = { x: 0, y: -1, z: 0 }
 const axleDir = { x: -1, y: 0, z: 0 }
@@ -34,13 +35,6 @@ export function Truck() {
     t.wheels.forEach((w) => {
       ctrl.addWheel(w, susDir, axleDir, t.suspensionRest, t.wheelRadius)
     })
-    for (let i = 0; i < t.wheels.length; i++) {
-      ctrl.setWheelSuspensionStiffness(i, t.stiffness)
-      ctrl.setWheelMaxSuspensionTravel(i, t.maxTravel)
-      ctrl.setWheelFrictionSlip(i, t.frictionSlip)
-      ctrl.setWheelSuspensionCompression(i, t.compression)
-      ctrl.setWheelSuspensionRelaxation(i, t.relaxation)
-    }
     ctrlRef.current = ctrl
     return () => {
       world.removeVehicleController(ctrl)
@@ -51,17 +45,33 @@ export function Truck() {
 
   useBeforePhysicsStep((w) => {
     const ctrl = ctrlRef.current
-    if (!ctrl) return
+    const chassis = chassisRef.current
+    if (!ctrl || !chassis) return
     const t = config.truck
     const dt = w.timestep
-    const target = input.throttle >= 0 ? input.throttle : input.throttle * t.reverseScale
+    const playing = useGame.getState().phase === 'playing'
+
+    chassis.setLinearDamping(t.linearDamping)
+    chassis.setAngularDamping(t.angularDamping)
+
+    const raw = playing ? input.throttle : 0
+    const target = raw >= 0 ? raw : raw * t.reverseScale
     applied.current = THREE.MathUtils.damp(applied.current, target, t.accelRate, dt)
+
     const force = applied.current * t.engineForce
-    const brake = input.brake * t.brakeForce
-    const steer = input.steer * t.maxSteer
+    const brake = (playing ? input.brake : 0) * t.brakeForce
+    const steer = (playing ? input.steer : 0) * t.maxSteer
+
     for (let i = 0; i < t.wheels.length; i++) {
       ctrl.setWheelEngineForce(i, force)
       ctrl.setWheelBrake(i, brake)
+      ctrl.setWheelSuspensionStiffness(i, t.stiffness)
+      ctrl.setWheelMaxSuspensionTravel(i, t.maxTravel)
+      ctrl.setWheelFrictionSlip(i, t.frictionSlip)
+      ctrl.setWheelSuspensionCompression(i, t.compression)
+      ctrl.setWheelSuspensionRelaxation(i, t.relaxation)
+      ctrl.setWheelSuspensionRestLength(i, t.suspensionRest)
+      ctrl.setWheelRadius(i, t.wheelRadius)
     }
     for (const i of t.steerWheels) ctrl.setWheelSteering(i, steer)
     ctrl.updateVehicle(dt)
@@ -77,6 +87,7 @@ export function Truck() {
       const sus = ctrl.wheelSuspensionLength(i) ?? config.truck.suspensionRest
       g.position.set(cp.x, cp.y - sus, cp.z)
       g.rotation.set(ctrl.wheelRotation(i) ?? 0, ctrl.wheelSteering(i) ?? 0, 0, 'YXZ')
+      g.scale.set(config.truck.wheelWidth, config.truck.wheelRadius, config.truck.wheelRadius)
     }
   })
 
@@ -111,7 +122,7 @@ export function Truck() {
       {t.wheels.map((_, i) => (
         <group key={i} ref={(el) => { wheelRefs.current[i] = el }}>
           <mesh castShadow rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[t.wheelRadius, t.wheelRadius, t.wheelWidth, 18]} />
+            <cylinderGeometry args={[1, 1, 1, 18]} />
             <meshStandardMaterial color={t.wheelColor} emissive={t.wheelGlow} emissiveIntensity={0.2} />
           </mesh>
         </group>
