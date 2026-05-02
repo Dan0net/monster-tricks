@@ -25,33 +25,27 @@ export const config = {
 
   obstacles: {
     pairedProb: 0.5,
-    kickerProb: 0.4,
-    quarterpipeProb: 0.3,
-    tabletopProb: 0.3,
+    quarterpipeProb: 0.5,
+    tabletopProb: 0.5,
     widthFrac: 0.2,
     sideXFrac: 0.25,
-    tabletopWidthFrac: 0.7,
     thickness: 0.4,
     curveSegments: 10,
-    kicker: {
-      heightMin: 1.5,
-      heightMax: 2.7,
-      lengthMin: 4,
-      lengthMax: 6,
-    },
     quarterpipe: {
-      heightMin: 2.0,
-      heightMax: 3.5,
-      lengthMin: 3,
-      lengthMax: 5,
+      heightMin: 4.0,
+      heightMax: 7.0,
+      rampLengthMin: 6,
+      rampLengthMax: 10,
+      topLengthMin: 8,
+      topLengthMax: 16,
     },
     tabletop: {
-      heightMin: 1.2,
-      heightMax: 2.2,
+      heightMin: 1.0,
+      heightMax: 3.5,
       rampLengthMin: 3,
       rampLengthMax: 4.5,
-      topLengthMin: 4,
-      topLengthMax: 7,
+      topLengthMin: 8,
+      topLengthMax: 14,
     },
   },
 
@@ -110,7 +104,9 @@ export const config = {
     engineForce: 1100,
     reverseScale: 0.5,
     accelRate: 4,
-    brakeForce: 80,
+    ebrakeForce: 200,
+    ebrakeFrictionSlip: 1.0,
+    ebrakeWheels: [2, 3] as number[],
     maxSteer: 0.55,
     maxSteerHighSpeed: 0.12,
     steerSpeedRef: 25,
@@ -131,7 +127,7 @@ export type TruckTunable =
   | 'comX' | 'comY' | 'comZ'
   | 'inertiaPitch' | 'inertiaYaw' | 'inertiaRoll'
   | 'wheelRadius' | 'wheelWidth' | 'wheelTrack' | 'wheelBase' | 'wheelY'
-  | 'engineForce' | 'accelRate' | 'reverseScale' | 'brakeForce' | 'maxSteer' | 'maxSteerHighSpeed' | 'steerSpeedRef' | 'steerRate'
+  | 'engineForce' | 'accelRate' | 'reverseScale' | 'ebrakeForce' | 'ebrakeFrictionSlip' | 'maxSteer' | 'maxSteerHighSpeed' | 'steerSpeedRef' | 'steerRate'
   | 'stiffness' | 'compression' | 'relaxation' | 'maxTravel' | 'suspensionRest'
   | 'maxSuspensionForce' | 'frictionSlip'
   | 'linearDamping' | 'angularDamping'

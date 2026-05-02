@@ -1,12 +1,9 @@
 import { RigidBody } from '@react-three/rapier'
 import { config } from '../config'
-import type {
-  Kicker,
-  Obstacle,
-  Quarterpipe,
-  Segment,
-  Tabletop,
-} from '../systems/track-gen'
+import type { Obstacle, Quarterpipe, Segment, Tabletop } from '../systems/track-gen'
+
+type Vec3 = [number, number, number]
+type Piece = { pos: Vec3; rot?: Vec3; size: Vec3 }
 
 function RampMaterial() {
   const c = config.track.obstacleColor
@@ -14,88 +11,70 @@ function RampMaterial() {
 }
 
 export function ObstacleRenderer({ segment, obstacle }: { segment: Segment; obstacle: Obstacle }) {
-  switch (obstacle.shape) {
-    case 'kicker':
-      return <KickerRenderer segment={segment} obstacle={obstacle} />
-    case 'quarterpipe':
-      return <QuarterpipeRenderer segment={segment} obstacle={obstacle} />
-    case 'tabletop':
-      return <TabletopRenderer segment={segment} obstacle={obstacle} />
-  }
+  const curve = obstacle.shape === 'quarterpipe'
+  return <BumpRenderer segment={segment} obstacle={obstacle} curve={curve} />
 }
 
-function KickerRenderer({ segment, obstacle }: { segment: Segment; obstacle: Kicker }) {
-  const thickness = config.obstacles.thickness
-  const pitch = Math.atan2(obstacle.height, obstacle.length)
-  const slantLen = Math.hypot(obstacle.length, obstacle.height)
-  const centerZ = segment.startZ + obstacle.z + obstacle.length / 2
-  const centerY = segment.startY + obstacle.height / 2 - (thickness / 2) * Math.cos(pitch)
-  return (
-    <RigidBody type="fixed" colliders="cuboid" position={[obstacle.xOffset, centerY, centerZ]} rotation={[-pitch, 0, 0]}>
-      <mesh castShadow>
-        <boxGeometry args={[obstacle.width, thickness, slantLen]} />
-        <RampMaterial />
-      </mesh>
-    </RigidBody>
-  )
-}
-
-function QuarterpipeRenderer({ segment, obstacle }: { segment: Segment; obstacle: Quarterpipe }) {
-  const thickness = config.obstacles.thickness
-  const N = config.obstacles.curveSegments
+function BumpRenderer({
+  segment, obstacle, curve,
+}: {
+  segment: Segment
+  obstacle: Quarterpipe | Tabletop
+  curve: boolean
+}) {
+  const o = config.obstacles
+  const N = o.curveSegments
+  const thickness = o.thickness
   const baseZ = segment.startZ + obstacle.z
-  const pieces = []
+  const baseY = segment.startY
+  const W = obstacle.width
+  const H = obstacle.height
+  const RL = obstacle.rampLength
+  const TL = obstacle.topLength
+  const total = 2 * RL + TL
+
+  const map = curve
+    ? (t: number) => ({ z: Math.sin(t * Math.PI / 2), y: 1 - Math.cos(t * Math.PI / 2) })
+    : (t: number) => ({ z: t, y: t })
+
+  const pieces: Piece[] = []
+
   for (let i = 0; i < N; i++) {
-    const t0 = (i / N) * (Math.PI / 2)
-    const t1 = ((i + 1) / N) * (Math.PI / 2)
-    const z0 = obstacle.length * Math.sin(t0)
-    const z1 = obstacle.length * Math.sin(t1)
-    const y0 = obstacle.height * (1 - Math.cos(t0))
-    const y1 = obstacle.height * (1 - Math.cos(t1))
+    const p0 = map(i / N)
+    const p1 = map((i + 1) / N)
+    const z0 = p0.z * RL, z1 = p1.z * RL
+    const y0 = p0.y * H, y1 = p1.y * H
     const dz = z1 - z0
     const dy = y1 - y0
     const segLen = Math.hypot(dz, dy)
     const pitch = Math.atan2(dy, dz)
-    const cz = baseZ + (z0 + z1) / 2
-    const cy = segment.startY + (y0 + y1) / 2 - (thickness / 2) * Math.cos(pitch)
-    pieces.push({ cz, cy, pitch, segLen })
+    const cyAvg = (y0 + y1) / 2
+    const cz = (z0 + z1) / 2
+    const minY = Math.min(y0, y1)
+    const slantCy = baseY + cyAvg - (thickness / 2) * Math.cos(pitch)
+    const fillCy = baseY + minY / 2
+
+    pieces.push({ pos: [obstacle.xOffset, slantCy, baseZ + cz], rot: [-pitch, 0, 0], size: [W, thickness, segLen] })
+    pieces.push({ pos: [obstacle.xOffset, slantCy, baseZ + (total - cz)], rot: [pitch, 0, 0], size: [W, thickness, segLen] })
+    if (minY > 0) {
+      pieces.push({ pos: [obstacle.xOffset, fillCy, baseZ + cz], size: [W, minY, dz] })
+      pieces.push({ pos: [obstacle.xOffset, fillCy, baseZ + (total - cz)], size: [W, minY, dz] })
+    }
   }
+
+  pieces.push({
+    pos: [obstacle.xOffset, baseY + H / 2, baseZ + RL + TL / 2],
+    size: [W, H, TL],
+  })
+
   return (
     <RigidBody type="fixed" colliders="cuboid">
       {pieces.map((p, i) => (
-        <mesh key={i} castShadow position={[obstacle.xOffset, p.cy, p.cz]} rotation={[-p.pitch, 0, 0]}>
-          <boxGeometry args={[obstacle.width, thickness, p.segLen]} />
+        <mesh key={i} castShadow position={p.pos} rotation={p.rot}>
+          <boxGeometry args={p.size} />
           <RampMaterial />
         </mesh>
       ))}
-    </RigidBody>
-  )
-}
-
-function TabletopRenderer({ segment, obstacle }: { segment: Segment; obstacle: Tabletop }) {
-  const thickness = config.obstacles.thickness
-  const baseZ = segment.startZ + obstacle.z
-  const pitch = Math.atan2(obstacle.height, obstacle.rampLength)
-  const slantLen = Math.hypot(obstacle.rampLength, obstacle.height)
-  const upZ = baseZ + obstacle.rampLength / 2
-  const upY = segment.startY + obstacle.height / 2 - (thickness / 2) * Math.cos(pitch)
-  const topZ = baseZ + obstacle.rampLength + obstacle.topLength / 2
-  const topY = segment.startY + obstacle.height - thickness / 2
-  const downZ = baseZ + obstacle.rampLength + obstacle.topLength + obstacle.rampLength / 2
-  return (
-    <RigidBody type="fixed" colliders="cuboid">
-      <mesh castShadow position={[obstacle.xOffset, upY, upZ]} rotation={[-pitch, 0, 0]}>
-        <boxGeometry args={[obstacle.width, thickness, slantLen]} />
-        <RampMaterial />
-      </mesh>
-      <mesh castShadow position={[obstacle.xOffset, topY, topZ]}>
-        <boxGeometry args={[obstacle.width, thickness, obstacle.topLength]} />
-        <RampMaterial />
-      </mesh>
-      <mesh castShadow position={[obstacle.xOffset, upY, downZ]} rotation={[pitch, 0, 0]}>
-        <boxGeometry args={[obstacle.width, thickness, slantLen]} />
-        <RampMaterial />
-      </mesh>
     </RigidBody>
   )
 }

@@ -1,19 +1,20 @@
 import { config } from '../config'
 
-export type ObstacleShape = 'kicker' | 'quarterpipe' | 'tabletop'
+export type ObstacleShape = 'quarterpipe' | 'tabletop'
 
 type ObstacleBase = {
   z: number
   xOffset: number
   width: number
   height: number
+  rampLength: number
+  topLength: number
 }
 
-export type Kicker = ObstacleBase & { shape: 'kicker'; length: number }
-export type Quarterpipe = ObstacleBase & { shape: 'quarterpipe'; length: number }
-export type Tabletop = ObstacleBase & { shape: 'tabletop'; rampLength: number; topLength: number }
+export type Quarterpipe = ObstacleBase & { shape: 'quarterpipe' }
+export type Tabletop = ObstacleBase & { shape: 'tabletop' }
 
-export type Obstacle = Kicker | Quarterpipe | Tabletop
+export type Obstacle = Quarterpipe | Tabletop
 
 export type Segment = {
   index: number
@@ -41,49 +42,32 @@ function lerp(a: number, b: number, t: number) {
 
 function pickShape(r: () => number): ObstacleShape {
   const o = config.obstacles
-  const total = o.kickerProb + o.quarterpipeProb + o.tabletopProb
+  const total = o.quarterpipeProb + o.tabletopProb
   const v = r() * total
-  if (v < o.kickerProb) return 'kicker'
-  if (v < o.kickerProb + o.quarterpipeProb) return 'quarterpipe'
+  if (v < o.quarterpipeProb) return 'quarterpipe'
   return 'tabletop'
 }
 
-function makeKicker(r: () => number, segLen: number, sideX: number, w: number): Obstacle[] {
-  const k = config.obstacles.kicker
-  const height = lerp(k.heightMin, k.heightMax, r())
-  const length = lerp(k.lengthMin, k.lengthMax, r())
-  const z = segLen / 2 - length / 2
-  if (r() < config.obstacles.pairedProb) {
-    return [
-      { shape: 'kicker', z, xOffset: -sideX, width: w, height, length },
-      { shape: 'kicker', z, xOffset: sideX, width: w, height, length },
-    ]
-  }
-  return [{ shape: 'kicker', z, xOffset: 0, width: w, height, length }]
-}
-
-function makeQuarterpipe(r: () => number, segLen: number, sideX: number, w: number): Obstacle[] {
-  const q = config.obstacles.quarterpipe
-  const height = lerp(q.heightMin, q.heightMax, r())
-  const length = lerp(q.lengthMin, q.lengthMax, r())
-  const z = segLen / 2 - length / 2
-  if (r() < config.obstacles.pairedProb) {
-    return [
-      { shape: 'quarterpipe', z, xOffset: -sideX, width: w, height, length },
-      { shape: 'quarterpipe', z, xOffset: sideX, width: w, height, length },
-    ]
-  }
-  return [{ shape: 'quarterpipe', z, xOffset: 0, width: w, height, length }]
-}
-
-function makeTabletop(r: () => number, segLen: number, w: number): Obstacle[] {
-  const t = config.obstacles.tabletop
-  const height = lerp(t.heightMin, t.heightMax, r())
-  const rampLength = lerp(t.rampLengthMin, t.rampLengthMax, r())
-  const topLength = lerp(t.topLengthMin, t.topLengthMax, r())
+function makeBump<S extends ObstacleShape>(
+  shape: S,
+  r: () => number,
+  segLen: number,
+  sideX: number,
+  sideW: number,
+  dims: { heightMin: number; heightMax: number; rampLengthMin: number; rampLengthMax: number; topLengthMin: number; topLengthMax: number },
+): Obstacle[] {
+  const height = lerp(dims.heightMin, dims.heightMax, r())
+  const rampLength = lerp(dims.rampLengthMin, dims.rampLengthMax, r())
+  const topLength = lerp(dims.topLengthMin, dims.topLengthMax, r())
   const total = 2 * rampLength + topLength
   const z = segLen / 2 - total / 2
-  return [{ shape: 'tabletop', z, xOffset: 0, width: w, height, rampLength, topLength }]
+  if (r() < config.obstacles.pairedProb) {
+    return [
+      { shape, z, xOffset: -sideX, width: sideW, height, rampLength, topLength } as Obstacle,
+      { shape, z, xOffset: sideX, width: sideW, height, rampLength, topLength } as Obstacle,
+    ]
+  }
+  return [{ shape, z, xOffset: 0, width: sideW, height, rampLength, topLength } as Obstacle]
 }
 
 export function genSegment(index: number, prevEndY: number, prevEndZ: number, seed: number): Segment {
@@ -93,20 +77,10 @@ export function genSegment(index: number, prevEndY: number, prevEndZ: number, se
   const o = config.obstacles
   const sideW = W * o.widthFrac
   const sideX = W * o.sideXFrac
-  const fullW = W * o.tabletopWidthFrac
 
-  let obstacles: Obstacle[]
-  switch (pickShape(r)) {
-    case 'kicker':
-      obstacles = makeKicker(r, length, sideX, sideW)
-      break
-    case 'quarterpipe':
-      obstacles = makeQuarterpipe(r, length, sideX, sideW)
-      break
-    case 'tabletop':
-      obstacles = makeTabletop(r, length, fullW)
-      break
-  }
+  const shape = pickShape(r)
+  const dims = shape === 'quarterpipe' ? o.quarterpipe : o.tabletop
+  const obstacles = makeBump(shape, r, length, sideX, sideW, dims)
 
   return {
     index,

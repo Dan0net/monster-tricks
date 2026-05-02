@@ -19,9 +19,9 @@ const axleDir = { x: -1, y: 0, z: 0 }
 const identityQ = { x: 0, y: 0, z: 0, w: 1 }
 const wheelCount = 4
 
-function wheelCs(i: number) {
+function wheelCs(i: number, includeWidth = false) {
   const t = config.truck
-  const x = (t.chassisX / 2) * t.wheelTrack
+  const x = (t.chassisX / 2) * t.wheelTrack + t.wheelWidth / 2 * (includeWidth ? 1 : 0)
   const z = (t.chassisZ / 2) * t.wheelBase
   const sx = i === 0 || i === 2 ? 1 : -1
   const sz = i === 0 || i === 1 ? 1 : -1
@@ -139,7 +139,7 @@ export function Truck() {
     applied.current = THREE.MathUtils.damp(applied.current, target, t.accelRate, dt)
 
     const force = applied.current * t.engineForce
-    const brake = (playing ? input.brake : 0) * t.brakeForce
+    const ebrakeOn = playing && input.ebrake > 0
     const lv = chassis.linvel()
     const speed = Math.hypot(lv.x, lv.z)
     const k = THREE.MathUtils.clamp(speed / t.steerSpeedRef, 0, 1)
@@ -149,12 +149,13 @@ export function Truck() {
     const steer = appliedSteer.current
 
     for (let i = 0; i < wheelCount; i++) {
-      ctrl.setWheelChassisConnectionPointCs(i, wheelCs(i))
-      ctrl.setWheelEngineForce(i, force)
-      ctrl.setWheelBrake(i, brake)
+      const ebrakeWheel = ebrakeOn && t.ebrakeWheels.includes(i)
+      ctrl.setWheelChassisConnectionPointCs(i, wheelCs(i, true))
+      ctrl.setWheelEngineForce(i, ebrakeWheel ? 0 : force)
+      ctrl.setWheelBrake(i, ebrakeWheel ? t.ebrakeForce : 0)
       ctrl.setWheelSuspensionStiffness(i, t.stiffness)
       ctrl.setWheelMaxSuspensionTravel(i, t.maxTravel)
-      ctrl.setWheelFrictionSlip(i, t.frictionSlip)
+      ctrl.setWheelFrictionSlip(i, ebrakeWheel ? t.ebrakeFrictionSlip : t.frictionSlip)
       ctrl.setWheelSuspensionCompression(i, t.compression)
       ctrl.setWheelSuspensionRelaxation(i, t.relaxation)
       ctrl.setWheelSuspensionRestLength(i, t.suspensionRest)

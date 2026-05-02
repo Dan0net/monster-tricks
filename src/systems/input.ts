@@ -1,7 +1,7 @@
 export const input = {
   throttle: 0,
   steer: 0,
-  brake: 0,
+  ebrake: 0,
   mouseDX: 0,
   mouseDY: 0,
 }
@@ -16,7 +16,7 @@ const update = () => {
   const right = keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0
   input.throttle = fwd - back
   input.steer = left - right
-  input.brake = keys.has('Space') ? 1 : 0
+  input.ebrake = keys.has('Space') ? 1 : 0
 }
 
 export function initInput() {
