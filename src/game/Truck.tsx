@@ -28,30 +28,18 @@ function wheelCs(i: number) {
   return { x: sx * x, y: t.wheelY, z: sz * z }
 }
 
-function buildDomePoints(rx: number, ry: number, rz: number): Float32Array {
+function buildEllipsoidPoints(rx: number, ry: number, rz: number): Float32Array {
   const segments = 16
-  const rings = 5
-  const pts: number[] = [0, ry, 0]
-  for (let r = 1; r <= rings; r++) {
-    const phi = (r / rings) * (Math.PI / 2)
+  const rings = 10
+  const pts: number[] = [0, ry, 0, 0, -ry, 0]
+  for (let r = 1; r < rings; r++) {
+    const phi = (r / rings) * Math.PI
     const y = ry * Math.cos(phi)
     const ringR = Math.sin(phi)
     for (let s = 0; s < segments; s++) {
       const theta = (s / segments) * Math.PI * 2
       pts.push(rx * ringR * Math.cos(theta), y, rz * ringR * Math.sin(theta))
     }
-  }
-  return new Float32Array(pts)
-}
-
-function buildCylinderPoints(rx: number, hy: number, rz: number): Float32Array {
-  const segments = 24
-  const pts: number[] = []
-  for (let s = 0; s < segments; s++) {
-    const theta = (s / segments) * Math.PI * 2
-    const x = rx * Math.cos(theta)
-    const z = rz * Math.sin(theta)
-    pts.push(x, hy, z, x, -hy, z)
   }
   return new Float32Array(pts)
 }
@@ -65,7 +53,7 @@ export function Truck() {
   const wheelRefs = useRef<(THREE.Group | null)[]>([])
   const chassisMeshRef = useRef<THREE.Mesh>(null!)
   const cabMeshRef = useRef<THREE.Mesh>(null!)
-  const domeMeshRef = useRef<THREE.Mesh>(null!)
+  const bodyMeshRef = useRef<THREE.Mesh>(null!)
   const applied = useRef(0)
 
   useEffect(() => {
@@ -178,20 +166,16 @@ export function Truck() {
       cabMeshRef.current.scale.set(t.chassisX * 0.7, t.chassisY * 0.7, t.chassisZ * 0.45)
       cabMeshRef.current.position.set(0, t.chassisY * 0.85, -0.4)
     }
-    if (domeMeshRef.current) {
-      domeMeshRef.current.position.set(0, t.chassisY / 2, 0)
-      domeMeshRef.current.scale.set(t.chassisX / 2, t.cabY, t.chassisZ / 2)
+    if (bodyMeshRef.current) {
+      bodyMeshRef.current.position.set(0, t.chassisY / 2, 0)
+      bodyMeshRef.current.scale.set(t.chassisX / 2, t.cabY, t.chassisZ / 2)
     }
   })
 
   const t = config.truck
-  const domePts = useMemo(
-    () => buildDomePoints(t.chassisX / 2, t.cabY, t.chassisZ / 2),
+  const bodyPts = useMemo(
+    () => buildEllipsoidPoints(t.chassisX / 2, t.cabY, t.chassisZ / 2),
     [t.chassisX, t.cabY, t.chassisZ],
-  )
-  const chassisPts = useMemo(
-    () => buildCylinderPoints(t.chassisX / 2, t.chassisY / 2, t.chassisZ / 2),
-    [t.chassisX, t.chassisY, t.chassisZ],
   )
   return (
     <RigidBody
@@ -203,18 +187,13 @@ export function Truck() {
       ccd
     >
       <ConvexHullCollider
-        args={[chassisPts]}
-        friction={0.5}
-        density={0}
-      />
-      <ConvexHullCollider
-        args={[domePts]}
+        args={[bodyPts]}
         position={[0, t.chassisY / 2, 0]}
         friction={0.5}
         density={0}
       />
-      <mesh ref={domeMeshRef} renderOrder={1}>
-        <sphereGeometry args={[1, 18, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+      <mesh ref={bodyMeshRef} renderOrder={1}>
+        <sphereGeometry args={[1, 18, 12]} />
         <meshBasicMaterial color={'white'} wireframe transparent />
       </mesh>
       <mesh ref={chassisMeshRef} castShadow>

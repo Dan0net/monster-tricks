@@ -6,16 +6,15 @@ import { input } from '../systems/input'
 import { truckBody } from './Truck'
 import { useGame } from '../store'
 
-const fwd = new THREE.Vector3()
 const desired = new THREE.Vector3()
-const q = new THREE.Quaternion()
 
 export function ChaseCamera() {
   const { camera } = useThree()
   const yaw = useRef(0)
   const pitch = useRef(0)
+  const lastTruckYaw = useRef(0)
 
-  useFrame((state) => {
+  useFrame((state, dt) => {
     const body = truckBody.current
     if (!body) return
     const c = config.camera
@@ -51,13 +50,14 @@ export function ChaseCamera() {
 
     const tr = body.translation()
     const ro = body.rotation()
-    q.set(ro.x, ro.y, ro.z, ro.w)
-    fwd.set(0, 0, 1).applyQuaternion(q)
-    fwd.y = 0
-    if (fwd.lengthSq() < 1e-4) fwd.set(0, 0, 1)
-    fwd.normalize()
-    const truckYaw = Math.atan2(fwd.x, fwd.z)
-    const a = truckYaw + yaw.current
+    const tw2 = ro.y * ro.y + ro.w * ro.w
+    const target = tw2 > c.yawHoldThreshold ? 2 * Math.atan2(ro.y, ro.w) : lastTruckYaw.current
+    const TAU = Math.PI * 2
+    let delta = (target - lastTruckYaw.current + Math.PI) % TAU
+    if (delta < 0) delta += TAU
+    delta -= Math.PI
+    lastTruckYaw.current += delta * (1 - Math.exp(-c.yawDampSpeed * dt))
+    const a = lastTruckYaw.current + yaw.current
     const cp = Math.cos(pitch.current)
 
     desired.set(
