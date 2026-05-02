@@ -26,6 +26,7 @@ const truckFields: Field<TruckTunable>[] = [
   { key: 'reverseScale',       min: 0,      max: 1,       step: 0.05 },
   { key: 'brakeForce',         min: 10,     max: 25000,   step: 10 },
   { key: 'maxSteer',           min: 0.1,    max: 1.2,     step: 0.05 },
+  { key: 'steerRate',          min: 0.5,    max: 30,      step: 0.5 },
   { key: 'stiffness',          min: 5,      max: 400,     step: 1 },
   { key: 'compression',        min: 0,      max: 10,      step: 0.1 },
   { key: 'relaxation',         min: 0,      max: 10,      step: 0.1 },

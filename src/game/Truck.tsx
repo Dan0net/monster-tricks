@@ -61,6 +61,7 @@ export function Truck() {
   const cabMeshRef = useRef<THREE.Mesh>(null!)
   const bodyMeshRef = useRef<THREE.Mesh>(null!)
   const applied = useRef(0)
+  const appliedSteer = useRef(0)
   const groundRay = useMemo(
     () => new rapier.Ray({ x: 0, y: 0, z: 0 }, { x: 0, y: -1, z: 0 }),
     [rapier],
@@ -78,6 +79,7 @@ export function Truck() {
       chassis.setLinvel({ x: 0, y: 0, z: 0 }, true)
       chassis.setAngvel({ x: 0, y: 0, z: 0 }, true)
       applied.current = 0
+      appliedSteer.current = 0
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -133,7 +135,9 @@ export function Truck() {
 
     const force = applied.current * t.engineForce
     const brake = (playing ? input.brake : 0) * t.brakeForce
-    const steer = (playing ? input.steer : 0) * t.maxSteer
+    const steerTarget = (playing ? input.steer : 0) * t.maxSteer
+    appliedSteer.current = THREE.MathUtils.damp(appliedSteer.current, steerTarget, t.steerRate, dt)
+    const steer = appliedSteer.current
 
     for (let i = 0; i < wheelCount; i++) {
       ctrl.setWheelChassisConnectionPointCs(i, wheelCs(i))

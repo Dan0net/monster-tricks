@@ -80,6 +80,7 @@ export const config = {
     accelRate: 4,
     brakeForce: 80,
     maxSteer: 0.55,
+    steerRate: 6,
 
     linearDamping: 0.08,
     angularDamping: 0.6,
@@ -96,7 +97,7 @@ export type TruckTunable =
   | 'comX' | 'comY' | 'comZ'
   | 'inertiaPitch' | 'inertiaYaw' | 'inertiaRoll'
   | 'wheelRadius' | 'wheelWidth' | 'wheelTrack' | 'wheelBase' | 'wheelY'
-  | 'engineForce' | 'accelRate' | 'reverseScale' | 'brakeForce' | 'maxSteer'
+  | 'engineForce' | 'accelRate' | 'reverseScale' | 'brakeForce' | 'maxSteer' | 'steerRate'
   | 'stiffness' | 'compression' | 'relaxation' | 'maxTravel' | 'suspensionRest'
   | 'maxSuspensionForce' | 'frictionSlip'
   | 'linearDamping' | 'angularDamping'
