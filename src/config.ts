@@ -47,8 +47,8 @@ export const config = {
     suspensionRest: 1.5,
     maxTravel: 0.5,
     stiffness: 30,
-    compression: 1.2,
-    relaxation: 2.0,
+    compression: 2.5,
+    relaxation: 4.0,
     maxSuspensionForce: 50000,
     frictionSlip: 2.8,
 

@@ -5,6 +5,7 @@ import {
   CuboidCollider,
   useRapier,
   useBeforePhysicsStep,
+  useAfterPhysicsStep,
   type RapierRigidBody,
 } from '@react-three/rapier'
 import type RAPIER from '@dimforge/rapier3d-compat'
@@ -121,9 +122,10 @@ export function Truck() {
     ctrl.updateVehicle(dt)
   })
 
-  useFrame(() => {
+  useAfterPhysicsStep(() => {
     const ctrl = ctrlRef.current
     if (!ctrl) return
+    ctrl.updateVehicle(0)
     const t = config.truck
     for (let i = 0; i < wheelCount; i++) {
       const g = wheelRefs.current[i]
@@ -134,6 +136,10 @@ export function Truck() {
       g.rotation.set(ctrl.wheelRotation(i) ?? 0, ctrl.wheelSteering(i) ?? 0, 0, 'YXZ')
       g.scale.set(t.wheelWidth, t.wheelRadius, t.wheelRadius)
     }
+  })
+
+  useFrame(() => {
+    const t = config.truck
     if (chassisMeshRef.current) {
       chassisMeshRef.current.scale.set(t.chassisX, t.chassisY, t.chassisZ)
     }
