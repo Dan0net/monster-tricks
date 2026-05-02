@@ -23,40 +23,59 @@ export const config = {
 
   truck: {
     mass: 160,
-    chassis: [2.2, 0.7, 4.0] as Vec3,
+    chassisX: 2.2,
+    chassisY: 0.7,
+    chassisZ: 4.0,
     spawn: [0, 3, 0] as Vec3,
     color: '#ff2d6f',
-    centerOfMass: { x: 0, y: -0.35, z: 0 },
-    principalAngularInertia: { x: 380, y: 280, z: 80 },
+
+    comX: 0,
+    comY: -0.35,
+    comZ: 0,
+    inertiaPitch: 380,
+    inertiaYaw: 280,
+    inertiaRoll: 80,
+
     wheelRadius: 0.65,
     wheelWidth: 0.55,
+    wheelTrack: 1.09,
+    wheelBase: 0.775,
+    wheelY: -0.05,
     wheelColor: '#0a0a18',
     wheelGlow: '#2dd4ff',
-    suspensionRest: 0.65,
+
+    suspensionRest: 1.5,
     maxTravel: 0.5,
     stiffness: 30,
     compression: 1.2,
     relaxation: 2.0,
+    maxSuspensionForce: 50000,
     frictionSlip: 2.8,
-    engineForce: 550,
+
+    engineForce: 1100,
     reverseScale: 0.5,
     accelRate: 4,
     brakeForce: 80,
     maxSteer: 0.55,
-    angularDamping: 0.6,
+
     linearDamping: 0.08,
-    wheels: [
-      { x:  1.2, y: -0.05, z:  1.55 },
-      { x: -1.2, y: -0.05, z:  1.55 },
-      { x:  1.2, y: -0.05, z: -1.55 },
-      { x: -1.2, y: -0.05, z: -1.55 },
-    ],
+    angularDamping: 0.6,
+
     steerWheels: [0, 1] as number[],
   },
 }
 
 export type TruckTunable =
+  | 'mass' | 'chassisX' | 'chassisY' | 'chassisZ'
+  | 'comX' | 'comY' | 'comZ'
+  | 'inertiaPitch' | 'inertiaYaw' | 'inertiaRoll'
+  | 'wheelRadius' | 'wheelWidth' | 'wheelTrack' | 'wheelBase' | 'wheelY'
   | 'engineForce' | 'accelRate' | 'reverseScale' | 'brakeForce' | 'maxSteer'
   | 'stiffness' | 'compression' | 'relaxation' | 'maxTravel' | 'suspensionRest'
-  | 'frictionSlip' | 'linearDamping' | 'angularDamping'
-  | 'wheelRadius' | 'wheelWidth'
+  | 'maxSuspensionForce' | 'frictionSlip'
+  | 'linearDamping' | 'angularDamping'
+
+export type CameraTunable =
+  | 'distance' | 'height' | 'lookHeight'
+  | 'sensitivity' | 'decay' | 'lerp'
+  | 'orbitDistance' | 'orbitHeight' | 'orbitSpeed' | 'orbitLookHeight'

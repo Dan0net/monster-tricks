@@ -16,6 +16,16 @@ import { useGame } from '../store'
 const susDir = { x: 0, y: -1, z: 0 }
 const axleDir = { x: -1, y: 0, z: 0 }
 const identityQ = { x: 0, y: 0, z: 0, w: 1 }
+const wheelCount = 4
+
+function wheelCs(i: number) {
+  const t = config.truck
+  const x = (t.chassisX / 2) * t.wheelTrack
+  const z = (t.chassisZ / 2) * t.wheelBase
+  const sx = i === 0 || i === 2 ? 1 : -1
+  const sz = i === 0 || i === 1 ? 1 : -1
+  return { x: sx * x, y: t.wheelY, z: sz * z }
+}
 
 export const truckBody = { current: null as RapierRigidBody | null }
 
@@ -24,6 +34,8 @@ export function Truck() {
   const chassisRef = useRef<RapierRigidBody>(null!)
   const ctrlRef = useRef<RAPIER.DynamicRayCastVehicleController | null>(null)
   const wheelRefs = useRef<(THREE.Group | null)[]>([])
+  const chassisMeshRef = useRef<THREE.Mesh>(null!)
+  const cabMeshRef = useRef<THREE.Mesh>(null!)
   const applied = useRef(0)
 
   useEffect(() => {
@@ -47,10 +59,17 @@ export function Truck() {
     if (!chassis) return
     truckBody.current = chassis
     const t = config.truck
+    chassis.setAdditionalMassProperties(
+      t.mass,
+      { x: t.comX, y: t.comY, z: t.comZ },
+      { x: t.inertiaPitch, y: t.inertiaYaw, z: t.inertiaRoll },
+      identityQ,
+      true,
+    )
     const ctrl = world.createVehicleController(chassis)
-    t.wheels.forEach((w) => {
-      ctrl.addWheel(w, susDir, axleDir, t.suspensionRest, t.wheelRadius)
-    })
+    for (let i = 0; i < wheelCount; i++) {
+      ctrl.addWheel(wheelCs(i), susDir, axleDir, t.suspensionRest, t.wheelRadius)
+    }
     ctrlRef.current = ctrl
     return () => {
       world.removeVehicleController(ctrl)
@@ -67,6 +86,13 @@ export function Truck() {
     const dt = w.timestep
     const playing = useGame.getState().phase === 'playing'
 
+    chassis.setAdditionalMassProperties(
+      t.mass,
+      { x: t.comX, y: t.comY, z: t.comZ },
+      { x: t.inertiaPitch, y: t.inertiaYaw, z: t.inertiaRoll },
+      identityQ,
+      false,
+    )
     chassis.setLinearDamping(t.linearDamping)
     chassis.setAngularDamping(t.angularDamping)
 
@@ -78,7 +104,8 @@ export function Truck() {
     const brake = (playing ? input.brake : 0) * t.brakeForce
     const steer = (playing ? input.steer : 0) * t.maxSteer
 
-    for (let i = 0; i < t.wheels.length; i++) {
+    for (let i = 0; i < wheelCount; i++) {
+      ctrl.setWheelChassisConnectionPointCs(i, wheelCs(i))
       ctrl.setWheelEngineForce(i, force)
       ctrl.setWheelBrake(i, brake)
       ctrl.setWheelSuspensionStiffness(i, t.stiffness)
@@ -88,6 +115,7 @@ export function Truck() {
       ctrl.setWheelSuspensionRelaxation(i, t.relaxation)
       ctrl.setWheelSuspensionRestLength(i, t.suspensionRest)
       ctrl.setWheelRadius(i, t.wheelRadius)
+      ctrl.setWheelMaxSuspensionForce(i, t.maxSuspensionForce)
     }
     for (const i of t.steerWheels) ctrl.setWheelSteering(i, steer)
     ctrl.updateVehicle(dt)
@@ -96,14 +124,22 @@ export function Truck() {
   useFrame(() => {
     const ctrl = ctrlRef.current
     if (!ctrl) return
-    for (let i = 0; i < config.truck.wheels.length; i++) {
+    const t = config.truck
+    for (let i = 0; i < wheelCount; i++) {
       const g = wheelRefs.current[i]
       if (!g) continue
-      const cp = config.truck.wheels[i]
-      const sus = ctrl.wheelSuspensionLength(i) ?? config.truck.suspensionRest
+      const cp = wheelCs(i)
+      const sus = ctrl.wheelSuspensionLength(i) ?? t.suspensionRest
       g.position.set(cp.x, cp.y - sus, cp.z)
       g.rotation.set(ctrl.wheelRotation(i) ?? 0, ctrl.wheelSteering(i) ?? 0, 0, 'YXZ')
-      g.scale.set(config.truck.wheelWidth, config.truck.wheelRadius, config.truck.wheelRadius)
+      g.scale.set(t.wheelWidth, t.wheelRadius, t.wheelRadius)
+    }
+    if (chassisMeshRef.current) {
+      chassisMeshRef.current.scale.set(t.chassisX, t.chassisY, t.chassisZ)
+    }
+    if (cabMeshRef.current) {
+      cabMeshRef.current.scale.set(t.chassisX * 0.7, t.chassisY * 0.7, t.chassisZ * 0.45)
+      cabMeshRef.current.position.set(0, t.chassisY * 0.85, -0.4)
     }
   })
 
@@ -118,24 +154,19 @@ export function Truck() {
       ccd
     >
       <CuboidCollider
-        args={[t.chassis[0] / 2, t.chassis[1] / 2, t.chassis[2] / 2]}
+        args={[t.chassisX / 2, t.chassisY / 2, t.chassisZ / 2]}
         friction={0.5}
-        massProperties={{
-          mass: t.mass,
-          centerOfMass: t.centerOfMass,
-          principalAngularInertia: t.principalAngularInertia,
-          angularInertiaLocalFrame: identityQ,
-        }}
+        density={0}
       />
-      <mesh castShadow>
-        <boxGeometry args={t.chassis} />
+      <mesh ref={chassisMeshRef} castShadow>
+        <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial color={t.color} emissive={t.color} emissiveIntensity={0.35} />
       </mesh>
-      <mesh castShadow position={[0, t.chassis[1] / 2 + 0.3, -0.3]}>
-        <boxGeometry args={[t.chassis[0] * 0.7, 0.6, t.chassis[2] * 0.45]} />
+      <mesh ref={cabMeshRef} castShadow>
+        <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial color="#1a1a2e" emissive={t.wheelGlow} emissiveIntensity={0.15} />
       </mesh>
-      {t.wheels.map((_, i) => (
+      {Array.from({ length: wheelCount }, (_, i) => (
         <group key={i} ref={(el) => { wheelRefs.current[i] = el }}>
           <mesh castShadow rotation={[0, 0, Math.PI / 2]}>
             <cylinderGeometry args={[1, 1, 1, 18]} />
