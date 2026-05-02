@@ -2,8 +2,9 @@ import { useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { RigidBody } from '@react-three/rapier'
 import { config } from '../config'
-import { genSegments, type Segment, type Obstacle } from '../systems/track-gen'
+import { genSegments, type Segment } from '../systems/track-gen'
 import { truckBody } from './Truck'
+import { ObstacleRenderer } from './Obstacles'
 
 export function Track() {
   const t = config.track
@@ -62,23 +63,5 @@ function SegmentRenderer({ segment }: { segment: Segment }) {
         <ObstacleRenderer key={i} segment={segment} obstacle={o} />
       ))}
     </>
-  )
-}
-
-function ObstacleRenderer({ segment, obstacle: o }: { segment: Segment; obstacle: Obstacle }) {
-  const t = config.track
-  const floorY = segment.startY
-  const rampPitch = Math.atan2(o.height, o.length)
-  const slantLen = Math.sqrt(o.length * o.length + o.height * o.height)
-  const thickness = 0.4
-  const centerZ = segment.startZ + o.z + o.length / 2
-  const centerY = floorY + o.height / 2 - (thickness / 2) * Math.cos(rampPitch)
-  return (
-    <RigidBody type="fixed" colliders="cuboid" position={[o.xOffset, centerY, centerZ]} rotation={[-rampPitch, 0, 0]}>
-      <mesh castShadow>
-        <boxGeometry args={[o.width, thickness, slantLen]} />
-        <meshStandardMaterial color={t.obstacleColor} emissive={t.obstacleColor} emissiveIntensity={0.3} />
-      </mesh>
-    </RigidBody>
   )
 }

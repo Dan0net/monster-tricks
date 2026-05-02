@@ -1,21 +1,22 @@
 import { config } from '../config'
 
-export type SegmentKind = 'straight' | 'ramp'
+export type ObstacleShape = 'kicker' | 'quarterpipe' | 'tabletop'
 
-export type ObstacleShape = 'kicker'
-
-export type Obstacle = {
-  shape: ObstacleShape
+type ObstacleBase = {
   z: number
   xOffset: number
   width: number
   height: number
-  length: number
 }
+
+export type Kicker = ObstacleBase & { shape: 'kicker'; length: number }
+export type Quarterpipe = ObstacleBase & { shape: 'quarterpipe'; length: number }
+export type Tabletop = ObstacleBase & { shape: 'tabletop'; rampLength: number; topLength: number }
+
+export type Obstacle = Kicker | Quarterpipe | Tabletop
 
 export type Segment = {
   index: number
-  kind: SegmentKind
   startZ: number
   endZ: number
   startY: number
@@ -34,36 +35,87 @@ function mulberry32(seed: number) {
   }
 }
 
-function pickKind(r: () => number, index: number): SegmentKind {
-  if (index < 2) return 'straight'
-  return r() < 0.5 ? 'straight' : 'ramp'
+function lerp(a: number, b: number, t: number) {
+  return a + (b - a) * t
+}
+
+function pickShape(r: () => number): ObstacleShape {
+  const o = config.obstacles
+  const total = o.kickerProb + o.quarterpipeProb + o.tabletopProb
+  const v = r() * total
+  if (v < o.kickerProb) return 'kicker'
+  if (v < o.kickerProb + o.quarterpipeProb) return 'quarterpipe'
+  return 'tabletop'
+}
+
+function makeKicker(r: () => number, segLen: number, sideX: number, w: number): Obstacle[] {
+  const k = config.obstacles.kicker
+  const height = lerp(k.heightMin, k.heightMax, r())
+  const length = lerp(k.lengthMin, k.lengthMax, r())
+  const z = segLen / 2 - length / 2
+  if (r() < config.obstacles.pairedProb) {
+    return [
+      { shape: 'kicker', z, xOffset: -sideX, width: w, height, length },
+      { shape: 'kicker', z, xOffset: sideX, width: w, height, length },
+    ]
+  }
+  return [{ shape: 'kicker', z, xOffset: 0, width: w, height, length }]
+}
+
+function makeQuarterpipe(r: () => number, segLen: number, sideX: number, w: number): Obstacle[] {
+  const q = config.obstacles.quarterpipe
+  const height = lerp(q.heightMin, q.heightMax, r())
+  const length = lerp(q.lengthMin, q.lengthMax, r())
+  const z = segLen / 2 - length / 2
+  if (r() < config.obstacles.pairedProb) {
+    return [
+      { shape: 'quarterpipe', z, xOffset: -sideX, width: w, height, length },
+      { shape: 'quarterpipe', z, xOffset: sideX, width: w, height, length },
+    ]
+  }
+  return [{ shape: 'quarterpipe', z, xOffset: 0, width: w, height, length }]
+}
+
+function makeTabletop(r: () => number, segLen: number, w: number): Obstacle[] {
+  const t = config.obstacles.tabletop
+  const height = lerp(t.heightMin, t.heightMax, r())
+  const rampLength = lerp(t.rampLengthMin, t.rampLengthMax, r())
+  const topLength = lerp(t.topLengthMin, t.topLengthMax, r())
+  const total = 2 * rampLength + topLength
+  const z = segLen / 2 - total / 2
+  return [{ shape: 'tabletop', z, xOffset: 0, width: w, height, rampLength, topLength }]
 }
 
 export function genSegment(index: number, prevEndY: number, prevEndZ: number, seed: number): Segment {
   const r = mulberry32(seed + index * 1009 + 17)
   const length = config.track.segmentLength
   const W = config.track.width
-  const startZ = prevEndZ
-  const endZ = prevEndZ + length
-  const startY = prevEndY
-  const endY = startY
-  const kind = pickKind(r, index)
-  const obstacles: Obstacle[] = []
+  const o = config.obstacles
+  const sideW = W * o.widthFrac
+  const sideX = W * o.sideXFrac
+  const fullW = W * o.tabletopWidthFrac
 
-  if (kind === 'ramp') {
-    const z = length * 0.4 + r() * length * 0.15
-    const height = 1.5 + r() * 1.2
-    const len = 4 + r() * 2
-    const w = W * 0.2
-    if (r() < 0.5) {
-      obstacles.push({ shape: 'kicker', z, xOffset: -W / 4, width: w, height, length: len })
-      obstacles.push({ shape: 'kicker', z, xOffset: W / 4, width: w, height, length: len })
-    } else {
-      obstacles.push({ shape: 'kicker', z, xOffset: 0, width: w, height, length: len })
-    }
+  let obstacles: Obstacle[]
+  switch (pickShape(r)) {
+    case 'kicker':
+      obstacles = makeKicker(r, length, sideX, sideW)
+      break
+    case 'quarterpipe':
+      obstacles = makeQuarterpipe(r, length, sideX, sideW)
+      break
+    case 'tabletop':
+      obstacles = makeTabletop(r, length, fullW)
+      break
   }
 
-  return { index, kind, startZ, endZ, startY, endY, obstacles }
+  return {
+    index,
+    startZ: prevEndZ,
+    endZ: prevEndZ + length,
+    startY: prevEndY,
+    endY: prevEndY,
+    obstacles,
+  }
 }
 
 export function genSegments(

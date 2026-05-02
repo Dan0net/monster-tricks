@@ -135,7 +135,11 @@ export function Truck() {
 
     const force = applied.current * t.engineForce
     const brake = (playing ? input.brake : 0) * t.brakeForce
-    const steerTarget = (playing ? input.steer : 0) * t.maxSteer
+    const lv = chassis.linvel()
+    const speed = Math.hypot(lv.x, lv.z)
+    const k = THREE.MathUtils.clamp(speed / t.steerSpeedRef, 0, 1)
+    const effectiveMaxSteer = t.maxSteer + (t.maxSteerHighSpeed - t.maxSteer) * k
+    const steerTarget = (playing ? input.steer : 0) * effectiveMaxSteer
     appliedSteer.current = THREE.MathUtils.damp(appliedSteer.current, steerTarget, t.steerRate, dt)
     const steer = appliedSteer.current
 

@@ -15,12 +15,44 @@ export const config = {
     initialCount: 18,
     batchCount: 8,
     generateAhead: 220,
-    startBuffer: 15,
+    startBuffer: 40,
     surfaceColor: '#15152b',
     edgeColor: '#2dd4ff',
     wallColor: '#1a1a2e',
     wallGlow: '#2dd4ff',
     obstacleColor: '#ff2d6f',
+  },
+
+  obstacles: {
+    pairedProb: 0.5,
+    kickerProb: 0.4,
+    quarterpipeProb: 0.3,
+    tabletopProb: 0.3,
+    widthFrac: 0.2,
+    sideXFrac: 0.25,
+    tabletopWidthFrac: 0.7,
+    thickness: 0.4,
+    curveSegments: 10,
+    kicker: {
+      heightMin: 1.5,
+      heightMax: 2.7,
+      lengthMin: 4,
+      lengthMax: 6,
+    },
+    quarterpipe: {
+      heightMin: 2.0,
+      heightMax: 3.5,
+      lengthMin: 3,
+      lengthMax: 5,
+    },
+    tabletop: {
+      heightMin: 1.2,
+      heightMax: 2.2,
+      rampLengthMin: 3,
+      rampLengthMax: 4.5,
+      topLengthMin: 4,
+      topLengthMax: 7,
+    },
   },
 
   camera: {
@@ -80,6 +112,8 @@ export const config = {
     accelRate: 4,
     brakeForce: 80,
     maxSteer: 0.55,
+    maxSteerHighSpeed: 0.12,
+    steerSpeedRef: 25,
     steerRate: 6,
 
     linearDamping: 0.08,
@@ -97,7 +131,7 @@ export type TruckTunable =
   | 'comX' | 'comY' | 'comZ'
   | 'inertiaPitch' | 'inertiaYaw' | 'inertiaRoll'
   | 'wheelRadius' | 'wheelWidth' | 'wheelTrack' | 'wheelBase' | 'wheelY'
-  | 'engineForce' | 'accelRate' | 'reverseScale' | 'brakeForce' | 'maxSteer' | 'steerRate'
+  | 'engineForce' | 'accelRate' | 'reverseScale' | 'brakeForce' | 'maxSteer' | 'maxSteerHighSpeed' | 'steerSpeedRef' | 'steerRate'
   | 'stiffness' | 'compression' | 'relaxation' | 'maxTravel' | 'suspensionRest'
   | 'maxSuspensionForce' | 'frictionSlip'
   | 'linearDamping' | 'angularDamping'
