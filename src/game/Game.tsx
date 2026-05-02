@@ -3,7 +3,7 @@ import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { config } from '../config'
 import { initInput } from '../systems/input'
-import { Ground } from './Ground'
+import { Track } from './Track'
 import { Truck } from './Truck'
 import { ChaseCamera } from './ChaseCamera'
 
@@ -16,7 +16,7 @@ export function Game() {
       <ambientLight intensity={0.35} />
       <directionalLight position={[20, 30, 10]} intensity={1.2} castShadow />
       <Physics gravity={[0, config.gravityY, 0]} timeStep={1 / 240}>
-        <Ground />
+        <Track />
         <Truck />
       </Physics>
       <ChaseCamera />

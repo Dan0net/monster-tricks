@@ -5,6 +5,24 @@ export const config = {
   ground: { size: 400, color: '#0b0b14' },
   fog: { color: '#06060c', near: 30, far: 220 },
 
+  track: {
+    seed: 1,
+    width: 26,
+    segmentLength: 40,
+    thickness: 0.6,
+    wallHeight: 5,
+    wallThickness: 1,
+    initialCount: 18,
+    batchCount: 8,
+    generateAhead: 220,
+    startBuffer: 15,
+    surfaceColor: '#15152b',
+    edgeColor: '#2dd4ff',
+    wallColor: '#1a1a2e',
+    wallGlow: '#2dd4ff',
+    obstacleColor: '#ff2d6f',
+  },
+
   camera: {
     fov: 60,
     distance: 11,
