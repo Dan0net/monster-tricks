@@ -1,7 +1,7 @@
 export type Vec3 = [number, number, number]
 
 export const config = {
-  gravity: [0, -30, 0] as Vec3,
+  gravityY: -30,
   ground: { size: 400, color: '#0b0b14' },
   fog: { color: '#06060c', near: 30, far: 220 },
 
@@ -26,7 +26,9 @@ export const config = {
     chassisX: 2.2,
     chassisY: 0.7,
     chassisZ: 4.0,
-    spawn: [0, 3, 0] as Vec3,
+    spawnX: 0,
+    spawnY: 3,
+    spawnZ: 0,
     color: '#ff2d6f',
 
     comX: 0,
@@ -65,8 +67,11 @@ export const config = {
   },
 }
 
+export type WorldTunable = 'gravityY'
+
 export type TruckTunable =
   | 'mass' | 'chassisX' | 'chassisY' | 'chassisZ'
+  | 'spawnY'
   | 'comX' | 'comY' | 'comZ'
   | 'inertiaPitch' | 'inertiaYaw' | 'inertiaRoll'
   | 'wheelRadius' | 'wheelWidth' | 'wheelTrack' | 'wheelBase' | 'wheelY'
@@ -76,6 +81,7 @@ export type TruckTunable =
   | 'linearDamping' | 'angularDamping'
 
 export type CameraTunable =
+  | 'fov'
   | 'distance' | 'height' | 'lookHeight'
   | 'sensitivity' | 'decay' | 'lerp'
   | 'orbitDistance' | 'orbitHeight' | 'orbitSpeed' | 'orbitLookHeight'

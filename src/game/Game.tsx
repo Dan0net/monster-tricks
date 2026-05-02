@@ -15,7 +15,7 @@ export function Game() {
       <fog attach="fog" args={[config.fog.color, config.fog.near, config.fog.far]} />
       <ambientLight intensity={0.35} />
       <directionalLight position={[20, 30, 10]} intensity={1.2} castShadow />
-      <Physics gravity={config.gravity} timeStep={1 / 240}>
+      <Physics gravity={[0, config.gravityY, 0]} timeStep={1 / 240}>
         <Ground />
         <Truck />
       </Physics>

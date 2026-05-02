@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { config, type TruckTunable, type CameraTunable } from '../config'
+import { config, type TruckTunable, type CameraTunable, type WorldTunable } from '../config'
 
 type Field<K extends string> = { key: K; min: number; max: number; step: number }
 
@@ -8,6 +8,7 @@ const truckFields: Field<TruckTunable>[] = [
   { key: 'chassisX',           min: 1.0,    max: 5.0,     step: 0.1 },
   { key: 'chassisY',           min: 0.3,    max: 3.0,     step: 0.1 },
   { key: 'chassisZ',           min: 2.0,    max: 8.0,     step: 0.1 },
+  { key: 'spawnY',             min: 0.5,    max: 50,      step: 0.5 },
   { key: 'comX',               min: -1.5,   max: 1.5,     step: 0.05 },
   { key: 'comY',               min: -1.5,   max: 1.5,     step: 0.05 },
   { key: 'comZ',               min: -2,     max: 2,       step: 0.05 },
@@ -35,7 +36,12 @@ const truckFields: Field<TruckTunable>[] = [
   { key: 'angularDamping',     min: 0,      max: 2,       step: 0.05 },
 ]
 
+const worldFields: Field<WorldTunable>[] = [
+  { key: 'gravityY',         min: -80,    max: -1,    step: 0.5 },
+]
+
 const cameraFields: Field<CameraTunable>[] = [
+  { key: 'fov',              min: 30,     max: 110,   step: 1 },
   { key: 'distance',         min: 4,      max: 30,    step: 0.5 },
   { key: 'height',           min: 1,      max: 15,    step: 0.25 },
   { key: 'lookHeight',       min: 0,      max: 5,     step: 0.1 },
@@ -80,6 +86,7 @@ export function TunePanel() {
   const bump = () => setN((n) => n + 1)
   return (
     <div className="tune">
+      <Section title="World" obj={config} fields={worldFields} bump={bump} />
       <Section title="Truck" obj={config.truck} fields={truckFields} bump={bump} />
       <Section title="Camera" obj={config.camera} fields={cameraFields} bump={bump} />
     </div>

@@ -20,6 +20,11 @@ export function ChaseCamera() {
     if (!body) return
     const c = config.camera
     const g = useGame.getState()
+    const persp = camera as THREE.PerspectiveCamera
+    if (persp.isPerspectiveCamera && persp.fov !== c.fov) {
+      persp.fov = c.fov
+      persp.updateProjectionMatrix()
+    }
 
     if (g.phase === 'menu' && !g.hasPlayed) {
       const tr0 = body.translation()

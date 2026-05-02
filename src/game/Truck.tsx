@@ -44,8 +44,8 @@ export function Truck() {
       if (e.code !== 'KeyR') return
       const chassis = chassisRef.current
       if (!chassis) return
-      const [x, y, z] = config.truck.spawn
-      chassis.setTranslation({ x, y, z }, true)
+      const t = config.truck
+      chassis.setTranslation({ x: t.spawnX, y: t.spawnY, z: t.spawnZ }, true)
       chassis.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true)
       chassis.setLinvel({ x: 0, y: 0, z: 0 }, true)
       chassis.setAngvel({ x: 0, y: 0, z: 0 }, true)
@@ -86,6 +86,8 @@ export function Truck() {
     const t = config.truck
     const dt = w.timestep
     const playing = useGame.getState().phase === 'playing'
+
+    w.gravity.y = config.gravityY
 
     chassis.setAdditionalMassProperties(
       t.mass,
@@ -154,7 +156,7 @@ export function Truck() {
     <RigidBody
       ref={chassisRef}
       colliders={false}
-      position={t.spawn}
+      position={[t.spawnX, t.spawnY, t.spawnZ]}
       angularDamping={t.angularDamping}
       linearDamping={t.linearDamping}
       ccd
