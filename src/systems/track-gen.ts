@@ -1,17 +1,16 @@
 import { config } from '../config'
 
-export type SegmentKind = 'straight' | 'ramp' | 'tabletop' | 'slopeDown' | 'dropJump'
+export type SegmentKind = 'straight' | 'ramp'
 
-export type ObstacleShape = 'kicker' | 'tabletop' | 'block'
+export type ObstacleShape = 'kicker'
 
 export type Obstacle = {
   shape: ObstacleShape
   z: number
+  xOffset: number
   width: number
   height: number
   length: number
-  topY?: number
-  dir?: 1 | -1
 }
 
 export type Segment = {
@@ -37,12 +36,7 @@ function mulberry32(seed: number) {
 
 function pickKind(r: () => number, index: number): SegmentKind {
   if (index < 2) return 'straight'
-  const v = r()
-  if (v < 0.30) return 'straight'
-  if (v < 0.50) return 'ramp'
-  if (v < 0.70) return 'tabletop'
-  if (v < 0.85) return 'slopeDown'
-  return 'dropJump'
+  return r() < 0.5 ? 'straight' : 'ramp'
 }
 
 export function genSegment(index: number, prevEndY: number, prevEndZ: number, seed: number): Segment {
@@ -52,50 +46,20 @@ export function genSegment(index: number, prevEndY: number, prevEndZ: number, se
   const startZ = prevEndZ
   const endZ = prevEndZ + length
   const startY = prevEndY
+  const endY = startY
   const kind = pickKind(r, index)
-  let endY = startY
   const obstacles: Obstacle[] = []
 
-  switch (kind) {
-    case 'straight':
-      break
-    case 'ramp':
-      obstacles.push({
-        shape: 'kicker',
-        z: length * 0.4 + r() * length * 0.15,
-        width: W * 0.7,
-        height: 1.5 + r() * 1.2,
-        length: 4 + r() * 2,
-      })
-      break
-    case 'tabletop': {
-      const H = 1.6 + r() * 0.9
-      const kL = 4.5 + r() * 1.5
-      const tL = length * 0.2 + r() * length * 0.1
-      const w = W * 0.85
-      const z0 = (length - (2 * kL + tL)) / 2
-      obstacles.push({ shape: 'kicker', z: z0, width: w, height: H, length: kL })
-      obstacles.push({ shape: 'tabletop', z: z0 + kL, width: w, height: H, length: tL })
-      obstacles.push({ shape: 'kicker', z: z0 + kL + tL, width: w, height: H, length: kL, dir: -1 })
-      break
-    }
-    case 'slopeDown':
-      endY = startY - (3 + r() * 4)
-      break
-    case 'dropJump': {
-      endY = startY - (4 + r() * 4)
-      const obsZ = length * 0.25 + r() * length * 0.15
-      const obsLen = 5 + r() * 3
-      const floorYatStart = startY + (obsZ / length) * (endY - startY)
-      obstacles.push({
-        shape: 'block',
-        z: obsZ,
-        width: W,
-        height: 0,
-        length: obsLen,
-        topY: floorYatStart + 0.4,
-      })
-      break
+  if (kind === 'ramp') {
+    const z = length * 0.4 + r() * length * 0.15
+    const height = 1.5 + r() * 1.2
+    const len = 4 + r() * 2
+    const w = W * 0.2
+    if (r() < 0.5) {
+      obstacles.push({ shape: 'kicker', z, xOffset: -W / 4, width: w, height, length: len })
+      obstacles.push({ shape: 'kicker', z, xOffset: W / 4, width: w, height, length: len })
+    } else {
+      obstacles.push({ shape: 'kicker', z, xOffset: 0, width: w, height, length: len })
     }
   }
 

@@ -7,10 +7,10 @@ export const config = {
 
   track: {
     seed: 1,
-    width: 26,
+    width: 52,
     segmentLength: 40,
     thickness: 0.6,
-    wallHeight: 5,
+    wallHeight: 10,
     wallThickness: 1,
     initialCount: 18,
     batchCount: 8,
