@@ -97,12 +97,22 @@ html, body, #root {
   letter-spacing: 0.3em;
   color: var(--accent2);
   font-size: 10px;
-  margin-bottom: 10px;
+  margin: 10px 0 8px;
   opacity: 0.9;
+  cursor: pointer;
+  list-style: none;
+}
+.tune details > .tune-title::before {
+  content: '▸ ';
+  display: inline-block;
+  width: 1em;
+}
+.tune details[open] > .tune-title::before {
+  content: '▾ ';
 }
 .tune label {
   display: grid;
-  grid-template-columns: 100px 1fr 44px;
+  grid-template-columns: 100px 1fr 60px;
   align-items: center;
   gap: 8px;
   margin-bottom: 4px;
@@ -113,11 +123,35 @@ html, body, #root {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.tune .val {
-  text-align: right;
-  color: var(--accent);
-}
 .tune input[type="range"] {
   width: 100%;
   accent-color: var(--accent);
+}
+.tune .num {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  color: var(--accent);
+  border: 1px solid rgba(45, 212, 255, 0.3);
+  font: inherit;
+  text-align: right;
+  padding: 2px 4px;
+  box-sizing: border-box;
+}
+.tune .num:focus {
+  outline: 1px solid var(--accent);
+}
+.tune-reset {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  background: rgba(255, 45, 111, 0.15);
+  color: var(--fg);
+  border: 1px solid rgba(255, 45, 111, 0.5);
+  font: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+}
+.tune-reset:hover {
+  background: rgba(255, 45, 111, 0.3);
 }

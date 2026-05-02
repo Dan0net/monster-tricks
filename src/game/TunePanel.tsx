@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { config, type TruckTunable, type CameraTunable, type WorldTunable } from '../config'
+import { resetTune, saveTune } from '../systems/tune-storage'
 
 type Field<K extends string> = { key: K; min: number; max: number; step: number }
 
@@ -54,12 +55,22 @@ const cameraFields: Field<CameraTunable>[] = [
   { key: 'orbitLookHeight',  min: 0,      max: 5,     step: 0.1 },
 ]
 
+function clamp(v: number, min: number, max: number) {
+  return v < min ? min : v > max ? max : v
+}
+
 function Section<K extends string>({
-  title, obj, fields, bump,
-}: { title: string; obj: Record<K, number>; fields: Field<K>[]; bump: () => void }) {
+  title, obj, fields, bump, open,
+}: {
+  title: string
+  obj: Record<K, number>
+  fields: Field<K>[]
+  bump: () => void
+  open: boolean
+}) {
   return (
-    <>
-      <div className="tune-title">{title}</div>
+    <details open={open}>
+      <summary className="tune-title">{title}</summary>
       {fields.map((f) => (
         <label key={f.key}>
           <span>{f.key}</span>
@@ -74,21 +85,47 @@ function Section<K extends string>({
               bump()
             }}
           />
-          <span className="val">{obj[f.key].toFixed(f.step < 0.01 ? 4 : 2)}</span>
+          <input
+            type="number"
+            className="num"
+            min={f.min}
+            max={f.max}
+            step={f.step}
+            value={obj[f.key]}
+            onChange={(e) => {
+              const n = parseFloat(e.target.value)
+              if (!Number.isFinite(n)) return
+              obj[f.key] = clamp(n, f.min, f.max)
+              bump()
+            }}
+          />
         </label>
       ))}
-    </>
+    </details>
   )
 }
 
 export function TunePanel() {
   const [, setN] = useState(0)
-  const bump = () => setN((n) => n + 1)
+  const saveTimer = useRef<number | null>(null)
+  const bump = () => {
+    setN((n) => n + 1)
+    if (saveTimer.current != null) clearTimeout(saveTimer.current)
+    saveTimer.current = window.setTimeout(() => {
+      saveTimer.current = null
+      void saveTune()
+    }, 300)
+  }
+  const onReset = () => {
+    resetTune()
+    bump()
+  }
   return (
     <div className="tune">
-      <Section title="World" obj={config} fields={worldFields} bump={bump} />
-      <Section title="Truck" obj={config.truck} fields={truckFields} bump={bump} />
-      <Section title="Camera" obj={config.camera} fields={cameraFields} bump={bump} />
+      <button className="tune-reset" onClick={onReset}>Reset all</button>
+      <Section title="World" obj={config} fields={worldFields} bump={bump} open={false} />
+      <Section title="Truck" obj={config.truck} fields={truckFields} bump={bump} open={true} />
+      <Section title="Camera" obj={config.camera} fields={cameraFields} bump={bump} open={false} />
     </div>
   )
 }

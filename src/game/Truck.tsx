@@ -62,7 +62,8 @@ export function Truck() {
       const chassis = chassisRef.current
       if (!chassis) return
       const t = config.truck
-      chassis.setTranslation({ x: t.spawnX, y: t.spawnY, z: t.spawnZ }, true)
+      const cur = chassis.translation()
+      chassis.setTranslation({ x: cur.x, y: t.spawnY, z: cur.z }, true)
       chassis.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true)
       chassis.setLinvel({ x: 0, y: 0, z: 0 }, true)
       chassis.setAngvel({ x: 0, y: 0, z: 0 }, true)
