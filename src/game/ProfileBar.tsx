@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   listProfiles, getActiveProfile,
-  switchProfile, createProfile, deleteProfile,
+  switchProfile, createProfile, deleteProfile, exportTune,
 } from '../systems/tune-storage'
 
 export function ProfileBar({ onChange }: { onChange: () => void }) {
@@ -32,6 +32,12 @@ export function ProfileBar({ onChange }: { onChange: () => void }) {
     refresh()
     onChange()
   }
+  const [copied, setCopied] = useState(false)
+  const onCopy = async () => {
+    await navigator.clipboard.writeText(exportTune())
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1200)
+  }
 
   return (
     <div className="profile-bar">
@@ -40,6 +46,7 @@ export function ProfileBar({ onChange }: { onChange: () => void }) {
       </select>
       <button onClick={onNew} title="Save current as new profile">+</button>
       <button onClick={onDelete} disabled={names.length <= 1} title="Delete current profile">✕</button>
+      <button onClick={onCopy} title="Copy config to clipboard">{copied ? '✓' : '⧉'}</button>
     </div>
   )
 }

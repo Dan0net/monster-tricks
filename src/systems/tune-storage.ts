@@ -66,6 +66,28 @@ export function resetTune(): void {
   apply(clone(DEFAULTS))
 }
 
+export function exportTune(): string {
+  const t = snapshot()
+  return [
+    `gravityY: ${formatValue(t.gravityY)},`,
+    `truck: ${formatObject(t.truck, 2)},`,
+    `camera: ${formatObject(t.camera, 2)},`,
+  ].join('\n')
+}
+
+function formatValue(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(formatValue).join(', ')}]`
+  if (typeof v === 'string') return JSON.stringify(v)
+  return String(v)
+}
+
+function formatObject(obj: Record<string, unknown>, indent: number): string {
+  const pad = '  '.repeat(indent)
+  const close = '  '.repeat(indent - 1)
+  const lines = Object.entries(obj).map(([k, v]) => `${pad}${k}: ${formatValue(v)},`)
+  return `{\n${lines.join('\n')}\n${close}}`
+}
+
 export function listProfiles(): string[] {
   return Object.keys(store.profiles)
 }
