@@ -15,6 +15,10 @@ export const config = {
     pitchMax: 0.7,
     decay: 0.88,
     lerp: 0.12,
+    orbitDistance: 14,
+    orbitHeight: 6,
+    orbitSpeed: 0.25,
+    orbitLookHeight: 1.0,
   },
 
   truck: {

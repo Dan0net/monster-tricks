@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import { config } from '../config'
 import { input } from '../systems/input'
 import { truckBody } from './Truck'
+import { useGame } from '../store'
 
 const fwd = new THREE.Vector3()
 const desired = new THREE.Vector3()
@@ -14,10 +15,23 @@ export function ChaseCamera() {
   const yaw = useRef(0)
   const pitch = useRef(0)
 
-  useFrame(() => {
+  useFrame((state) => {
     const body = truckBody.current
     if (!body) return
     const c = config.camera
+    const g = useGame.getState()
+
+    if (g.phase === 'menu' && !g.hasPlayed) {
+      const tr0 = body.translation()
+      const a = state.clock.elapsedTime * c.orbitSpeed
+      camera.position.set(
+        tr0.x + Math.cos(a) * c.orbitDistance,
+        tr0.y + c.orbitHeight,
+        tr0.z + Math.sin(a) * c.orbitDistance,
+      )
+      camera.lookAt(tr0.x, tr0.y + c.orbitLookHeight, tr0.z)
+      return
+    }
 
     if (input.mouseDX !== 0 || input.mouseDY !== 0) {
       yaw.current -= input.mouseDX * c.sensitivity

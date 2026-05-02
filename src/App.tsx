@@ -26,13 +26,13 @@ export default function App() {
       <Game />
       <TunePanel />
       {phase === 'menu' && (
-        <div className="menu">
+        <div className="menu" onClick={onPlay}>
           <div className="menu-inner">
             <p className="sub">Monster</p>
             <h1>Tricks</h1>
-            <button className="play" onClick={onPlay}>Play</button>
+            <button className="play">Play</button>
           </div>
-          <div className="hint">WASD / Arrows · Mouse to look · Esc to exit</div>
+          <div className="hint">WASD / Arrows · Mouse to look · R to reset · Esc to exit</div>
         </div>
       )}
     </>

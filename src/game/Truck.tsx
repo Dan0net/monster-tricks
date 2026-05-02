@@ -27,6 +27,22 @@ export function Truck() {
   const applied = useRef(0)
 
   useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== 'KeyR') return
+      const chassis = chassisRef.current
+      if (!chassis) return
+      const [x, y, z] = config.truck.spawn
+      chassis.setTranslation({ x, y, z }, true)
+      chassis.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true)
+      chassis.setLinvel({ x: 0, y: 0, z: 0 }, true)
+      chassis.setAngvel({ x: 0, y: 0, z: 0 }, true)
+      applied.current = 0
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  useEffect(() => {
     const chassis = chassisRef.current
     if (!chassis) return
     truckBody.current = chassis
