@@ -51,6 +51,9 @@ const chassisP = new THREE.Vector3()
 const chassisQ = new THREE.Quaternion()
 const invChassisQ = new THREE.Quaternion()
 const wheelLocal = new THREE.Vector3()
+const sampleOffset = new THREE.Vector3()
+const sampleWorld = new THREE.Vector3()
+const widthSamples = [-1, 0, 1]
 
 export function Truck() {
   const { rapier, world } = useRapier()
@@ -183,17 +186,27 @@ export function Truck() {
       g.scale.set(t.wheelWidth, t.wheelRadius, t.wheelRadius)
 
       wheelWorld.copy(g.position).applyQuaternion(chassisQ).add(chassisP)
-      const originY = wheelWorld.y + t.wheelRadius
-      groundRay.origin.x = wheelWorld.x
-      groundRay.origin.y = originY
-      groundRay.origin.z = wheelWorld.z
-      const hit = world.castRay(groundRay, t.wheelRadius * 2, true, undefined, undefined, undefined, chassis)
-      if (hit) {
+      const halfWidth = t.wheelWidth / 2
+      const steer = ctrl.wheelSteering(i) ?? 0
+      const cs = Math.cos(steer)
+      const sn = Math.sin(steer)
+      let bestMinCenterY = -Infinity
+      for (const s of widthSamples) {
+        const dx = s * halfWidth
+        sampleOffset.set(dx * cs, 0, -dx * sn).applyQuaternion(chassisQ)
+        sampleWorld.copy(wheelWorld).add(sampleOffset)
+        const originY = sampleWorld.y + t.wheelRadius
+        groundRay.origin.x = sampleWorld.x
+        groundRay.origin.y = originY
+        groundRay.origin.z = sampleWorld.z
+        const hit = world.castRay(groundRay, t.wheelRadius * 2, true, undefined, undefined, undefined, chassis)
+        if (!hit) continue
         const minCenterY = originY - hit.timeOfImpact + t.wheelRadius
-        if (wheelWorld.y < minCenterY) {
-          wheelLocal.set(wheelWorld.x, minCenterY, wheelWorld.z).sub(chassisP).applyQuaternion(invChassisQ)
-          g.position.copy(wheelLocal)
-        }
+        if (minCenterY > bestMinCenterY) bestMinCenterY = minCenterY
+      }
+      if (bestMinCenterY > -Infinity && wheelWorld.y < bestMinCenterY) {
+        wheelLocal.set(wheelWorld.x, bestMinCenterY, wheelWorld.z).sub(chassisP).applyQuaternion(invChassisQ)
+        g.position.copy(wheelLocal)
       }
     }
   })

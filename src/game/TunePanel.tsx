@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { config, type TruckTunable, type CameraTunable, type WorldTunable } from '../config'
 import { resetTune, saveTune } from '../systems/tune-storage'
+import { ProfileBar } from './ProfileBar'
 
 type Field<K extends string> = { key: K; min: number; max: number; step: number }
 
@@ -125,6 +126,7 @@ export function TunePanel() {
   }
   return (
     <div className="tune">
+      <ProfileBar onChange={bump} />
       <button className="tune-reset" onClick={onReset}>Reset all</button>
       <Section title="World" obj={config} fields={worldFields} bump={bump} open={false} />
       <Section title="Truck" obj={config.truck} fields={truckFields} bump={bump} open={true} />

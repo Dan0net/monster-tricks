@@ -155,3 +155,29 @@ html, body, #root {
 .tune-reset:hover {
   background: rgba(255, 45, 111, 0.3);
 }
+
+.profile-bar {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.profile-bar select {
+  background: rgba(0, 0, 0, 0.4);
+  color: var(--accent2);
+  border: 1px solid rgba(45, 212, 255, 0.35);
+  font: inherit;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+.profile-bar select:focus { outline: 1px solid var(--accent2); }
+.profile-bar button {
+  background: rgba(45, 212, 255, 0.12);
+  color: var(--accent2);
+  border: 1px solid rgba(45, 212, 255, 0.4);
+  font: inherit;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.profile-bar button:hover { background: rgba(45, 212, 255, 0.25); }
+.profile-bar button:disabled { opacity: 0.3; cursor: not-allowed; }
