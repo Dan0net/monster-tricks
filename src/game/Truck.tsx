@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import {
   RigidBody,
-  CuboidCollider,
+  ConvexHullCollider,
   useRapier,
   useBeforePhysicsStep,
   useAfterPhysicsStep,
@@ -28,6 +28,34 @@ function wheelCs(i: number) {
   return { x: sx * x, y: t.wheelY, z: sz * z }
 }
 
+function buildDomePoints(rx: number, ry: number, rz: number): Float32Array {
+  const segments = 16
+  const rings = 5
+  const pts: number[] = [0, ry, 0]
+  for (let r = 1; r <= rings; r++) {
+    const phi = (r / rings) * (Math.PI / 2)
+    const y = ry * Math.cos(phi)
+    const ringR = Math.sin(phi)
+    for (let s = 0; s < segments; s++) {
+      const theta = (s / segments) * Math.PI * 2
+      pts.push(rx * ringR * Math.cos(theta), y, rz * ringR * Math.sin(theta))
+    }
+  }
+  return new Float32Array(pts)
+}
+
+function buildCylinderPoints(rx: number, hy: number, rz: number): Float32Array {
+  const segments = 24
+  const pts: number[] = []
+  for (let s = 0; s < segments; s++) {
+    const theta = (s / segments) * Math.PI * 2
+    const x = rx * Math.cos(theta)
+    const z = rz * Math.sin(theta)
+    pts.push(x, hy, z, x, -hy, z)
+  }
+  return new Float32Array(pts)
+}
+
 export const truckBody = { current: null as RapierRigidBody | null }
 
 export function Truck() {
@@ -37,6 +65,7 @@ export function Truck() {
   const wheelRefs = useRef<(THREE.Group | null)[]>([])
   const chassisMeshRef = useRef<THREE.Mesh>(null!)
   const cabMeshRef = useRef<THREE.Mesh>(null!)
+  const domeMeshRef = useRef<THREE.Mesh>(null!)
   const applied = useRef(0)
 
   useEffect(() => {
@@ -143,15 +172,27 @@ export function Truck() {
   useFrame(() => {
     const t = config.truck
     if (chassisMeshRef.current) {
-      chassisMeshRef.current.scale.set(t.chassisX, t.chassisY, t.chassisZ)
+      chassisMeshRef.current.scale.set(t.chassisX / 2, t.chassisY, t.chassisZ / 2)
     }
     if (cabMeshRef.current) {
       cabMeshRef.current.scale.set(t.chassisX * 0.7, t.chassisY * 0.7, t.chassisZ * 0.45)
       cabMeshRef.current.position.set(0, t.chassisY * 0.85, -0.4)
     }
+    if (domeMeshRef.current) {
+      domeMeshRef.current.position.set(0, t.chassisY / 2, 0)
+      domeMeshRef.current.scale.set(t.chassisX / 2, t.cabY, t.chassisZ / 2)
+    }
   })
 
   const t = config.truck
+  const domePts = useMemo(
+    () => buildDomePoints(t.chassisX / 2, t.cabY, t.chassisZ / 2),
+    [t.chassisX, t.cabY, t.chassisZ],
+  )
+  const chassisPts = useMemo(
+    () => buildCylinderPoints(t.chassisX / 2, t.chassisY / 2, t.chassisZ / 2),
+    [t.chassisX, t.chassisY, t.chassisZ],
+  )
   return (
     <RigidBody
       ref={chassisRef}
@@ -161,13 +202,23 @@ export function Truck() {
       linearDamping={t.linearDamping}
       ccd
     >
-      <CuboidCollider
-        args={[t.chassisX / 2, t.chassisY / 2, t.chassisZ / 2]}
+      <ConvexHullCollider
+        args={[chassisPts]}
         friction={0.5}
         density={0}
       />
+      <ConvexHullCollider
+        args={[domePts]}
+        position={[0, t.chassisY / 2, 0]}
+        friction={0.5}
+        density={0}
+      />
+      <mesh ref={domeMeshRef} renderOrder={1}>
+        <sphereGeometry args={[1, 18, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshBasicMaterial color={'white'} wireframe transparent />
+      </mesh>
       <mesh ref={chassisMeshRef} castShadow>
-        <boxGeometry args={[1, 1, 1]} />
+        <cylinderGeometry args={[1, 1, 1, 24]} />
         <meshStandardMaterial color={t.color} emissive={t.color} emissiveIntensity={0.35} />
       </mesh>
       <mesh ref={cabMeshRef} castShadow>
