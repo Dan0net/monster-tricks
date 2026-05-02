@@ -51,9 +51,11 @@ const chassisP = new THREE.Vector3()
 const chassisQ = new THREE.Quaternion()
 const invChassisQ = new THREE.Quaternion()
 const wheelLocal = new THREE.Vector3()
-const sampleOffset = new THREE.Vector3()
-const sampleWorld = new THREE.Vector3()
-const widthSamples = [-1, 0, 1]
+const shapeRot = new THREE.Quaternion()
+const steerYawQ = new THREE.Quaternion()
+const baseRotZ90 = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2)
+const yAxis = new THREE.Vector3(0, 1, 0)
+const castVel = { x: 0, y: -1, z: 0 }
 
 export function Truck() {
   const { rapier, world } = useRapier()
@@ -65,8 +67,8 @@ export function Truck() {
   const bodyMeshRef = useRef<THREE.Mesh>(null!)
   const applied = useRef(0)
   const appliedSteer = useRef(0)
-  const groundRay = useMemo(
-    () => new rapier.Ray({ x: 0, y: 0, z: 0 }, { x: 0, y: -1, z: 0 }),
+  const wheelShape = useMemo(
+    () => new rapier.Cylinder(config.truck.wheelWidth / 2, config.truck.wheelRadius),
     [rapier],
   )
 
@@ -186,27 +188,23 @@ export function Truck() {
       g.scale.set(t.wheelWidth, t.wheelRadius, t.wheelRadius)
 
       wheelWorld.copy(g.position).applyQuaternion(chassisQ).add(chassisP)
-      const halfWidth = t.wheelWidth / 2
+      wheelShape.halfHeight = t.wheelWidth / 2
+      wheelShape.radius = t.wheelRadius
       const steer = ctrl.wheelSteering(i) ?? 0
-      const cs = Math.cos(steer)
-      const sn = Math.sin(steer)
-      let bestMinCenterY = -Infinity
-      for (const s of widthSamples) {
-        const dx = s * halfWidth
-        sampleOffset.set(dx * cs, 0, -dx * sn).applyQuaternion(chassisQ)
-        sampleWorld.copy(wheelWorld).add(sampleOffset)
-        const originY = sampleWorld.y + t.wheelRadius
-        groundRay.origin.x = sampleWorld.x
-        groundRay.origin.y = originY
-        groundRay.origin.z = sampleWorld.z
-        const hit = world.castRay(groundRay, t.wheelRadius * 2, true, undefined, undefined, undefined, chassis)
-        if (!hit) continue
-        const minCenterY = originY - hit.timeOfImpact + t.wheelRadius
-        if (minCenterY > bestMinCenterY) bestMinCenterY = minCenterY
-      }
-      if (bestMinCenterY > -Infinity && wheelWorld.y < bestMinCenterY) {
-        wheelLocal.set(wheelWorld.x, bestMinCenterY, wheelWorld.z).sub(chassisP).applyQuaternion(invChassisQ)
-        g.position.copy(wheelLocal)
+      steerYawQ.setFromAxisAngle(yAxis, steer)
+      shapeRot.copy(chassisQ).multiply(steerYawQ).multiply(baseRotZ90)
+      const shapePos = { x: wheelWorld.x, y: wheelWorld.y + t.wheelRadius, z: wheelWorld.z }
+      const hit = world.castShape(
+        shapePos, shapeRot, castVel, wheelShape,
+        0, t.wheelRadius * 2, true,
+        undefined, undefined, undefined, chassis,
+      )
+      if (hit) {
+        const minCenterY = wheelWorld.y + t.wheelRadius - hit.time_of_impact
+        if (wheelWorld.y < minCenterY) {
+          wheelLocal.set(wheelWorld.x, minCenterY, wheelWorld.z).sub(chassisP).applyQuaternion(invChassisQ)
+          g.position.copy(wheelLocal)
+        }
       }
     }
   })
