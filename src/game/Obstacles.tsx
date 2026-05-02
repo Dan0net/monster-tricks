@@ -3,7 +3,7 @@ import { config } from '../config'
 import type { Obstacle, Quarterpipe, Segment, Tabletop } from '../systems/track-gen'
 
 type Vec3 = [number, number, number]
-type Piece = { pos: Vec3; rot?: Vec3; size: Vec3 }
+type Piece = { pos: Vec3; rot?: Vec3; size: Vec3; collide: boolean }
 
 function RampMaterial() {
   const c = config.track.obstacleColor
@@ -54,27 +54,39 @@ function BumpRenderer({
     const slantCy = baseY + cyAvg - (thickness / 2) * Math.cos(pitch)
     const fillCy = baseY + minY / 2
 
-    pieces.push({ pos: [obstacle.xOffset, slantCy, baseZ + cz], rot: [-pitch, 0, 0], size: [W, thickness, segLen] })
-    pieces.push({ pos: [obstacle.xOffset, slantCy, baseZ + (total - cz)], rot: [pitch, 0, 0], size: [W, thickness, segLen] })
+    pieces.push({ pos: [obstacle.xOffset, slantCy, baseZ + cz], rot: [-pitch, 0, 0], size: [W, thickness, segLen], collide: true })
+    pieces.push({ pos: [obstacle.xOffset, slantCy, baseZ + (total - cz)], rot: [pitch, 0, 0], size: [W, thickness, segLen], collide: true })
     if (minY > 0) {
-      pieces.push({ pos: [obstacle.xOffset, fillCy, baseZ + cz], size: [W, minY, dz] })
-      pieces.push({ pos: [obstacle.xOffset, fillCy, baseZ + (total - cz)], size: [W, minY, dz] })
+      pieces.push({ pos: [obstacle.xOffset, fillCy, baseZ + cz], size: [W, minY, dz], collide: false })
+      pieces.push({ pos: [obstacle.xOffset, fillCy, baseZ + (total - cz)], size: [W, minY, dz], collide: false })
     }
   }
 
   pieces.push({
     pos: [obstacle.xOffset, baseY + H / 2, baseZ + RL + TL / 2],
     size: [W, H, TL],
+    collide: true,
   })
 
+  const colliders = pieces.filter((p) => p.collide)
+  const decor = pieces.filter((p) => !p.collide)
+
   return (
-    <RigidBody type="fixed" colliders="cuboid">
-      {pieces.map((p, i) => (
+    <>
+      <RigidBody type="fixed" colliders="cuboid">
+        {colliders.map((p, i) => (
+          <mesh key={i} castShadow position={p.pos} rotation={p.rot}>
+            <boxGeometry args={p.size} />
+            <RampMaterial />
+          </mesh>
+        ))}
+      </RigidBody>
+      {decor.map((p, i) => (
         <mesh key={i} castShadow position={p.pos} rotation={p.rot}>
           <boxGeometry args={p.size} />
           <RampMaterial />
         </mesh>
       ))}
-    </RigidBody>
+    </>
   )
 }

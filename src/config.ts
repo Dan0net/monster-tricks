@@ -30,7 +30,7 @@ export const config = {
     widthFrac: 0.2,
     sideXFrac: 0.25,
     thickness: 0.4,
-    curveSegments: 10,
+    curveSegments: 5,
     quarterpipe: {
       heightMin: 4.0,
       heightMax: 7.0,
