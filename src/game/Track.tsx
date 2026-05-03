@@ -57,33 +57,12 @@ const SegmentRenderer = memo(function SegmentRenderer({ segment }: { segment: Se
     () => [W, t.thickness, L],
     [W, t.thickness, L],
   )
-  const rightWallPos = useMemo<[number, number, number]>(
-    () => [W / 2 + t.wallThickness / 2, t.wallHeight / 2, 0],
-    [W, t.wallThickness, t.wallHeight],
-  )
-  const leftWallPos = useMemo<[number, number, number]>(
-    () => [-(W / 2 + t.wallThickness / 2), t.wallHeight / 2, 0],
-    [W, t.wallThickness, t.wallHeight],
-  )
-  const wallArgs = useMemo<[number, number, number]>(
-    () => [t.wallThickness, t.wallHeight, L],
-    [t.wallThickness, t.wallHeight, L],
-  )
-
   return (
     <>
       <RigidBody type="fixed" colliders="cuboid" position={bodyPos}>
         <mesh receiveShadow position={surfacePos}>
           <boxGeometry args={surfaceArgs} />
           <meshStandardMaterial color={t.surfaceColor} />
-        </mesh>
-        <mesh castShadow position={rightWallPos}>
-          <boxGeometry args={wallArgs} />
-          <meshStandardMaterial color={t.wallColor} emissive={t.wallGlow} emissiveIntensity={0.35} />
-        </mesh>
-        <mesh castShadow position={leftWallPos}>
-          <boxGeometry args={wallArgs} />
-          <meshStandardMaterial color={t.wallColor} emissive={t.wallGlow} emissiveIntensity={0.35} />
         </mesh>
       </RigidBody>
       <mesh
