@@ -125,7 +125,8 @@ export const config = {
     wheelTrack: 1.13,
     wheelBase: 1.0,
     wheelY: 0.5,
-    tireColor: '#0a0a18',
+    tireColor: '#22d3ee',
+    treadColor: '#000000',
     rimColor: '#2dd4ff',
     rimGlow: '#2dd4ff',
     treadBlocks: 16,
@@ -151,7 +152,8 @@ export const config = {
     frictionSlip: 8,
 
     peakTorque: 8000,
-    topSpeedTarget: 22,
+    topSpeedTarget: 50,
+    torqueExponent: 0.5,
     reverseScale: 0.5,
     accelRate: 20,
     ebrakeForce: 5000,
@@ -159,7 +161,8 @@ export const config = {
     ebrakeWheels: [0, 1, 2, 3] as number[],
     maxSteer: 0.7,
     maxSteerHighSpeed: 0.06,
-    steerSpeedRef: 12,
+    steerSpeedRef: 18,
+    steerExponent: 2,
     steerRate: 30,
 
     linearDamping: 0.08,
@@ -186,7 +189,7 @@ export type TruckTunable =
   | 'comX' | 'comY' | 'comZ'
   | 'inertiaPitch' | 'inertiaYaw' | 'inertiaRoll'
   | 'wheelRadius' | 'wheelWidth' | 'wheelTrack' | 'wheelBase' | 'wheelY'
-  | 'peakTorque' | 'topSpeedTarget' | 'accelRate' | 'reverseScale' | 'ebrakeForce' | 'ebrakeFrictionSlip' | 'maxSteer' | 'maxSteerHighSpeed' | 'steerSpeedRef' | 'steerRate' | 'rearSteerPhase'
+  | 'peakTorque' | 'topSpeedTarget' | 'torqueExponent' | 'accelRate' | 'reverseScale' | 'ebrakeForce' | 'ebrakeFrictionSlip' | 'maxSteer' | 'maxSteerHighSpeed' | 'steerSpeedRef' | 'steerExponent' | 'steerRate' | 'rearSteerPhase'
   | 'stiffness' | 'compression' | 'relaxation' | 'maxTravel' | 'suspensionRest'
   | 'maxSuspensionForce' | 'frictionSlip'
   | 'linearDamping' | 'angularDamping'

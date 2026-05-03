@@ -164,13 +164,14 @@ export function Truck() {
     fwdWorldV.set(0, 0, 1).applyQuaternion(chassisQ)
     const fwdSpeed = lv.x * fwdWorldV.x + lv.y * fwdWorldV.y + lv.z * fwdWorldV.z
     const sa = Math.sign(applied.current)
-    const t01 = sa === 0 ? 0 : THREE.MathUtils.clamp(1 - (sa * fwdSpeed) / t.topSpeedTarget, 0, 1)
-    const torqueScale = t01 * t01
+    const tx = sa === 0 ? 1 : THREE.MathUtils.clamp((sa * fwdSpeed) / t.topSpeedTarget, 0, 1)
+    const torqueScale = sa === 0 ? 0 : 1 - Math.pow(tx, t.torqueExponent)
     const force = applied.current * t.peakTorque * torqueScale
     const ebrakeOn = playing && input.ebrake > 0
     const speed = Math.hypot(lv.x, lv.z)
-    const k = THREE.MathUtils.clamp(speed / t.steerSpeedRef, 0, 1)
-    const effectiveMaxSteer = t.maxSteer + (t.maxSteerHighSpeed - t.maxSteer) * k
+    const sx = THREE.MathUtils.clamp(speed / t.steerSpeedRef, 0, 1)
+    const steerRetention = 1 - Math.pow(sx, t.steerExponent)
+    const effectiveMaxSteer = t.maxSteerHighSpeed + (t.maxSteer - t.maxSteerHighSpeed) * steerRetention
     const steerTarget = (playing ? input.steer : 0) * effectiveMaxSteer
     appliedSteer.current = THREE.MathUtils.damp(appliedSteer.current, steerTarget, t.steerRate, dt)
     const steer = appliedSteer.current

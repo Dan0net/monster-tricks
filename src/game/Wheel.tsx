@@ -39,10 +39,10 @@ export function Wheel() {
 
   return (
     <group rotation={[0, 0, Math.PI / 2]}>
-      <mesh geometry={tireGeom} castShadow>
-        <meshStandardMaterial color={t.tireColor} roughness={0.95} metalness={0.05} />
+      <mesh geometry={tireGeom}>
+        <meshStandardMaterial color={t.tireColor} />
       </mesh>
-      <mesh geometry={rimGeom} castShadow>
+      <mesh geometry={rimGeom}>
         <meshStandardMaterial color={t.rimColor} emissive={t.rimGlow} emissiveIntensity={0.7} metalness={0.7} roughness={0.3} />
       </mesh>
       {spokeAngles.map((a, i) => (
@@ -60,12 +60,12 @@ export function Wheel() {
         <Fragment key={i}>
           <group position={[Math.cos(a) * treadR, treadOffset, Math.sin(a) * treadR]} rotation={[0, -a, 0]}>
             <mesh geometry={treadGeom} rotation={[t.treadChevronAngle, 0, 0]}>
-              <meshStandardMaterial color={t.frame.blueColor} emissive={t.frame.blueColor} emissiveIntensity={0.3} roughness={0.7} metalness={0.2} />
+              <meshStandardMaterial color={t.treadColor} roughness={0.9} metalness={0.0} />
             </mesh>
           </group>
           <group position={[Math.cos(a) * treadR, -treadOffset, Math.sin(a) * treadR]} rotation={[0, -a, 0]}>
             <mesh geometry={treadGeom} rotation={[-t.treadChevronAngle, 0, 0]}>
-              <meshStandardMaterial color={t.frame.blueColor} emissive={t.frame.blueColor} emissiveIntensity={0.3} roughness={0.7} metalness={0.2} />
+              <meshStandardMaterial color={t.treadColor} roughness={0.9} metalness={0.0} />
             </mesh>
           </group>
         </Fragment>
