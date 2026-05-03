@@ -1,0 +1,156 @@
+import { config } from '../config'
+
+export type ScoringState = {
+  airborne: boolean
+  airTimeMs: number
+  pitchAccum: number
+  rollAccum: number
+  pitchFlipsCounted: number
+  rollFlipsCounted: number
+  flipsThisRun: number
+  maxSpeed: number
+  smoothedSpeed: number
+  pendingAirScore: number
+  score: number
+  multiplier: number
+  speed: number
+  crashed: boolean
+}
+
+export type ScoringInput = {
+  dt: number
+  speed: number
+  grounded: boolean
+  upY: number
+  yPos: number
+  angvelLocalX: number
+  angvelLocalZ: number
+  playing: boolean
+}
+
+export type ScoringEvents = {
+  flips: number
+  landed: boolean
+  landAmount: number
+  crashed: boolean
+  lossAmount: number
+  lossMul: number
+}
+
+const TWO_PI = Math.PI * 2
+
+const noEvents = (): ScoringEvents => ({
+  flips: 0, landed: false, landAmount: 0, crashed: false, lossAmount: 0, lossMul: 0,
+})
+
+export function initScoring(): ScoringState {
+  return {
+    airborne: false,
+    airTimeMs: 0,
+    pitchAccum: 0,
+    rollAccum: 0,
+    pitchFlipsCounted: 0,
+    rollFlipsCounted: 0,
+    flipsThisRun: 0,
+    maxSpeed: 0,
+    smoothedSpeed: 0,
+    pendingAirScore: 0,
+    score: 0,
+    multiplier: 1,
+    speed: 0,
+    crashed: false,
+  }
+}
+
+function clearRunMods(s: ScoringState) {
+  s.airborne = false
+  s.airTimeMs = 0
+  s.pitchAccum = 0
+  s.rollAccum = 0
+  s.pitchFlipsCounted = 0
+  s.rollFlipsCounted = 0
+  s.flipsThisRun = 0
+  s.maxSpeed = 0
+  s.smoothedSpeed = 0
+  s.pendingAirScore = 0
+  s.multiplier = 1
+}
+
+function crash(s: ScoringState): ScoringEvents {
+  const lossAmount = s.pendingAirScore
+  const lossMul = s.multiplier
+  clearRunMods(s)
+  s.crashed = true
+  return { flips: 0, landed: false, landAmount: 0, crashed: true, lossAmount, lossMul }
+}
+
+export function manualReset(s: ScoringState): ScoringEvents {
+  if (s.crashed) {
+    s.crashed = false
+    return noEvents()
+  }
+  const ev = crash(s)
+  s.crashed = false
+  return ev
+}
+
+function countFlipDelta(accum: number, counted: number, threshold: number): number {
+  let n = counted
+  while (Math.abs(accum) >= threshold + n * TWO_PI) n++
+  return n - counted
+}
+
+export function updateScoring(s: ScoringState, i: ScoringInput): ScoringEvents {
+  const c = config.scoring
+  s.speed = i.speed
+  if (!i.playing || s.crashed) return noEvents()
+
+  if (i.yPos < c.fallY) return crash(s)
+
+  if (i.grounded && s.smoothedSpeed - i.speed > c.impactDrop) return crash(s)
+  s.smoothedSpeed += (i.speed - s.smoothedSpeed) * c.impactSmooth
+
+  if (i.speed > s.maxSpeed) s.maxSpeed = i.speed
+
+  if (!s.airborne && !i.grounded) {
+    s.airborne = true
+    s.airTimeMs = 0
+    s.pitchAccum = 0
+    s.rollAccum = 0
+    s.pitchFlipsCounted = 0
+    s.rollFlipsCounted = 0
+    s.pendingAirScore = 0
+  }
+
+  let flipsThisTick = 0
+  if (s.airborne) {
+    s.airTimeMs += i.dt * 1000
+    s.pitchAccum += i.angvelLocalX * i.dt
+    s.rollAccum += i.angvelLocalZ * i.dt
+    const dPitch = countFlipDelta(s.pitchAccum, s.pitchFlipsCounted, c.flipThreshold)
+    const dRoll = countFlipDelta(s.rollAccum, s.rollFlipsCounted, c.flipThreshold)
+    s.pitchFlipsCounted += dPitch
+    s.rollFlipsCounted += dRoll
+    flipsThisTick = dPitch + dRoll
+    s.flipsThisRun += flipsThisTick
+  }
+
+  s.multiplier = 1 + Math.floor(s.maxSpeed / c.speedPerMul) + s.flipsThisRun * c.flipMulBonus
+
+  if (s.airborne && !i.grounded) {
+    s.pendingAirScore += c.airScoreRate * i.dt * s.multiplier
+  }
+
+  if (s.airborne && i.grounded) {
+    if (i.upY > c.landUpThreshold) {
+      const banked = s.pendingAirScore
+      s.score += banked
+      s.pendingAirScore = 0
+      s.airborne = false
+      return { flips: flipsThisTick, landed: true, landAmount: banked, crashed: false, lossAmount: 0, lossMul: 0 }
+    }
+    return crash(s)
+  }
+
+  return { flips: flipsThisTick, landed: false, landAmount: 0, crashed: false, lossAmount: 0, lossMul: 0 }
+}

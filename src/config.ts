@@ -16,6 +16,7 @@ export const config = {
     batchCount: 8,
     generateAhead: 220,
     startBuffer: 40,
+    startEmptySegments: 2,
     surfaceColor: '#15152b',
     edgeColor: '#2dd4ff',
     wallColor: '#1a1a2e',
@@ -107,7 +108,7 @@ export const config = {
     ebrakeForce: 200,
     ebrakeFrictionSlip: 1.0,
     ebrakeWheels: [2, 3] as number[],
-    maxSteer: 1.0,
+    maxSteer: 0.55,
     maxSteerHighSpeed: 0.12,
     steerSpeedRef: 25,
     steerRate: 30,
@@ -116,6 +117,17 @@ export const config = {
     angularDamping: 0.6,
 
     steerWheels: [0, 1] as number[],
+  },
+
+  scoring: {
+    flipThreshold: (270 * Math.PI) / 180,
+    speedPerMul: 10,
+    flipMulBonus: 10,
+    airScoreRate: 1000,
+    landUpThreshold: 0,
+    fallY: -10,
+    impactDrop: 6,
+    impactSmooth: 0.1,
   },
 }
 

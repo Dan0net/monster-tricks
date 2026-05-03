@@ -12,6 +12,7 @@ import type RAPIER from '@dimforge/rapier3d-compat'
 import * as THREE from 'three'
 import { config } from '../config'
 import { input } from '../systems/input'
+import { initScoring, manualReset, updateScoring, type ScoringEvents, type ScoringState } from '../systems/scoring'
 import { useGame } from '../store'
 
 const susDir = { x: 0, y: -1, z: 0 }
@@ -56,6 +57,7 @@ const steerYawQ = new THREE.Quaternion()
 const baseRotZ90 = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2)
 const yAxis = new THREE.Vector3(0, 1, 0)
 const castVel = { x: 0, y: -1, z: 0 }
+const angvelLocal = new THREE.Vector3()
 
 export function Truck() {
   const { rapier, world } = useRapier()
@@ -71,24 +73,47 @@ export function Truck() {
     () => new rapier.Cylinder(config.truck.wheelWidth / 2, config.truck.wheelRadius),
     [rapier],
   )
+  const scoringRef = useRef<ScoringState | null>(null)
+  if (!scoringRef.current) scoringRef.current = initScoring()
+  const phase = useGame((s) => s.phase)
+
+  const respawn = () => {
+    const chassis = chassisRef.current
+    if (!chassis) return
+    const t = config.truck
+    const cur = chassis.translation()
+    chassis.setTranslation({ x: cur.x, y: t.spawnY, z: cur.z }, true)
+    chassis.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true)
+    chassis.setLinvel({ x: 0, y: 0, z: 0 }, true)
+    chassis.setAngvel({ x: 0, y: 0, z: 0 }, true)
+    applied.current = 0
+    appliedSteer.current = 0
+  }
+  const respawnRef = useRef(respawn)
+  respawnRef.current = respawn
+
+  const dispatchEvents = (ev: ScoringEvents) => {
+    const g = useGame.getState()
+    if (ev.flips > 0) g.pulseFlip()
+    if (ev.landed) g.pulseLand(ev.landAmount)
+    if (ev.crashed) g.pulseLoss(ev.lossAmount, ev.lossMul)
+  }
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== 'KeyR') return
-      const chassis = chassisRef.current
-      if (!chassis) return
-      const t = config.truck
-      const cur = chassis.translation()
-      chassis.setTranslation({ x: cur.x, y: t.spawnY, z: cur.z }, true)
-      chassis.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true)
-      chassis.setLinvel({ x: 0, y: 0, z: 0 }, true)
-      chassis.setAngvel({ x: 0, y: 0, z: 0 }, true)
-      applied.current = 0
-      appliedSteer.current = 0
+      respawnRef.current()
+      dispatchEvents(manualReset(scoringRef.current!))
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+
+  useEffect(() => {
+    if (phase !== 'playing') return
+    Object.assign(scoringRef.current!, initScoring())
+    respawnRef.current()
+  }, [phase])
 
   useEffect(() => {
     const chassis = chassisRef.current
@@ -166,7 +191,7 @@ export function Truck() {
     ctrl.updateVehicle(dt)
   })
 
-  useAfterPhysicsStep(() => {
+  useAfterPhysicsStep((w) => {
     const ctrl = ctrlRef.current
     const chassis = chassisRef.current
     if (!ctrl || !chassis) return
@@ -178,6 +203,23 @@ export function Truck() {
     chassisP.set(ct.x, ct.y, ct.z)
     chassisQ.set(cq.x, cq.y, cq.z, cq.w)
     invChassisQ.copy(chassisQ).invert()
+
+    let groundedCount = 0
+    for (let i = 0; i < wheelCount; i++) if (ctrl.wheelIsInContact(i)) groundedCount++
+    const lv = chassis.linvel()
+    const av = chassis.angvel()
+    angvelLocal.set(av.x, av.y, av.z).applyQuaternion(invChassisQ)
+    const ev = updateScoring(scoringRef.current!, {
+      dt: w.timestep,
+      speed: Math.hypot(lv.x, lv.y, lv.z),
+      grounded: groundedCount > 0,
+      upY: 1 - 2 * (cq.x * cq.x + cq.z * cq.z),
+      yPos: ct.y,
+      angvelLocalX: angvelLocal.x,
+      angvelLocalZ: angvelLocal.z,
+      playing: useGame.getState().phase === 'playing',
+    })
+    dispatchEvents(ev)
 
     for (let i = 0; i < wheelCount; i++) {
       const g = wheelRefs.current[i]
@@ -211,6 +253,18 @@ export function Truck() {
   })
 
   useFrame(() => {
+    const s = scoringRef.current!
+    useGame.getState().setLive({
+      score: s.score,
+      multiplier: s.multiplier,
+      pendingAirScore: s.pendingAirScore,
+      speed: s.speed,
+      maxSpeed: s.maxSpeed,
+      flips: s.flipsThisRun,
+      airborne: s.airborne,
+      pitchDeg: (s.pitchAccum * 180) / Math.PI,
+      rollDeg: (s.rollAccum * 180) / Math.PI,
+    })
     const t = config.truck
     if (chassisMeshRef.current) {
       chassisMeshRef.current.scale.set(t.chassisX / 2, t.chassisY, t.chassisZ / 2)

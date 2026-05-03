@@ -78,9 +78,12 @@ export function genSegment(index: number, prevEndY: number, prevEndZ: number, se
   const sideW = W * o.widthFrac
   const sideX = W * o.sideXFrac
 
-  const shape = pickShape(r)
-  const dims = shape === 'quarterpipe' ? o.quarterpipe : o.tabletop
-  const obstacles = makeBump(shape, r, length, sideX, sideW, dims)
+  let obstacles: Obstacle[] = []
+  if (index >= config.track.startEmptySegments) {
+    const shape = pickShape(r)
+    const dims = shape === 'quarterpipe' ? o.quarterpipe : o.tabletop
+    obstacles = makeBump(shape, r, length, sideX, sideW, dims)
+  }
 
   return {
     index,
