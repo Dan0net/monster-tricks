@@ -4,6 +4,8 @@ import { config } from '../config'
 const KEY = 'monster-tricks/tune'
 const DEFAULT_NAME = 'Default'
 const TRUCK1_NAME = 'truck1'
+const TRUCK2_NAME = 'truck2'
+const TRUCK3_NAME = 'truck3'
 
 type Tune = {
   gravityY: number
@@ -36,6 +38,26 @@ const TRUCK1_TRUCK_OVERRIDES = {
   steerExponent: 2,
 }
 
+const TRUCK2_TRUCK_OVERRIDES = {
+  chassisY: 0.7,
+  comY: -0.3,
+  comZ: 0,
+  inertiaPitch: 5160,
+  wheelRadius: 0.9,
+  wheelWidth: 0.8,
+  wheelTrack: 1.13,
+  wheelY: 0.5,
+  peakTorque: 8000,
+  topSpeedTarget: 22,
+  torqueExponent: 1,
+  ebrakeFrictionSlip: 0.4,
+  steerSpeedRef: 12,
+  steerExponent: 1,
+  stiffness: 16,
+  compression: 4,
+  relaxation: 4,
+}
+
 function buildTruck1(): Tune {
   return clone({
     gravityY: DEFAULTS.gravityY,
@@ -44,16 +66,65 @@ function buildTruck1(): Tune {
   })
 }
 
-function ensureSeeds(s: Store): boolean {
-  let added = false
-  if (!s.profiles[TRUCK1_NAME]) {
-    s.profiles[TRUCK1_NAME] = buildTruck1()
-    added = true
-  }
-  return added
+function buildTruck2(): Tune {
+  return clone({
+    gravityY: DEFAULTS.gravityY,
+    truck: { ...DEFAULTS.truck, ...TRUCK2_TRUCK_OVERRIDES },
+    camera: DEFAULTS.camera,
+  })
 }
 
-let store: Store = { active: DEFAULT_NAME, profiles: { [DEFAULT_NAME]: clone(DEFAULTS), [TRUCK1_NAME]: buildTruck1() } }
+const TRUCK3_TRUCK_OVERRIDES = {
+  mass: 1000,
+  chassisY: 0.8,
+  comY: -0.2,
+  comZ: 0.2,
+  inertiaPitch: 3000,
+  wheelRadius: 1.0,
+  wheelWidth: 1.2,
+  wheelTrack: 1.34,
+  wheelY: -0.2,
+  maxTravel: 1.5,
+  stiffness: 14,
+  compression: 2.5,
+  relaxation: 2.5,
+  frictionSlip: 8,
+  peakTorque: 20650,
+  topSpeedTarget: 40,
+  torqueExponent: 0.2,
+  ebrakeForce: 5000,
+  ebrakeFrictionSlip: 5,
+  maxSteer: 0.7,
+  maxSteerHighSpeed: 0.06,
+  steerSpeedRef: 30,
+  steerExponent: 0.5,
+  rearSteerPhase: -1,
+}
+
+function buildTruck3(): Tune {
+  return clone({
+    gravityY: DEFAULTS.gravityY,
+    truck: { ...DEFAULTS.truck, ...TRUCK3_TRUCK_OVERRIDES },
+    camera: DEFAULTS.camera,
+  })
+}
+
+function ensureSeeds(s: Store): boolean {
+  s.profiles[TRUCK1_NAME] = buildTruck1()
+  s.profiles[TRUCK2_NAME] = buildTruck2()
+  s.profiles[TRUCK3_NAME] = buildTruck3()
+  return true
+}
+
+let store: Store = {
+  active: DEFAULT_NAME,
+  profiles: {
+    [DEFAULT_NAME]: clone(DEFAULTS),
+    [TRUCK1_NAME]: buildTruck1(),
+    [TRUCK2_NAME]: buildTruck2(),
+    [TRUCK3_NAME]: buildTruck3(),
+  },
+}
 
 function clone<T>(v: T): T {
   return JSON.parse(JSON.stringify(v))
