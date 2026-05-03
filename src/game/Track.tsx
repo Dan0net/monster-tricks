@@ -5,6 +5,7 @@ import { config } from '../config'
 import { genSegment, genSegments, type Segment } from '../systems/track-gen'
 import { truckBody } from './Truck'
 import { ObstacleRenderer } from './Obstacles'
+import { getGridMaterial } from './GridMaterial'
 
 export function Track() {
   const t = config.track
@@ -85,6 +86,13 @@ const SegmentRenderer = memo(function SegmentRenderer({ segment }: { segment: Se
           <meshStandardMaterial color={t.wallColor} emissive={t.wallGlow} emissiveIntensity={0.35} />
         </mesh>
       </RigidBody>
+      <mesh
+        position={[0, segment.startY + 0.005, midZ]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        material={getGridMaterial()}
+      >
+        <planeGeometry args={[W, L]} />
+      </mesh>
       {segment.obstacles.map((o, i) => (
         <ObstacleRenderer key={i} segment={segment} obstacle={o} />
       ))}

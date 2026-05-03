@@ -17,11 +17,15 @@ export const config = {
     trimBehind: 80,
     startBuffer: 40,
     startEmptySegments: 2,
-    surfaceColor: '#15152b',
+    surfaceColor: '#000000',
     edgeColor: '#2dd4ff',
     wallColor: '#1a1a2e',
     wallGlow: '#2dd4ff',
     obstacleColor: '#ff2d6f',
+    surfaceGridSize: 2,
+    surfaceGridLineWidth: 1.0,
+    surfaceGridColor: '#2dd4ff',
+    surfaceGridBrightness: 0.5,
   },
 
   obstacles: {
@@ -109,12 +113,9 @@ export const config = {
     airSpinDamp: 1.0,
 
     frame: {
-      insetX: 0.7,
-      zSpan: 4.0,
       axleRadius: 0.12,
       armRadius: 0.08,
       xArmRadius: 0.05,
-      armMountY: -0.1,
       blueColor: '#2dd4ff',
     },
 

@@ -23,6 +23,10 @@ export function Suspension({ wheelRefs }: Props) {
   const t = config.truck
   const f = t.frame
   const halfWidth = t.wheelWidth / 2
+  const inset = t.bevelRadius
+  const mountX = t.chassisX * t.bodyXFrac / 2 - inset
+  const mountZ = t.chassisZ * t.bodyZFrac / 2 - inset
+  const mountY = t.bodyY - t.chassisY / 2 + inset
   const axleRefs = useRef<(THREE.Mesh | null)[]>([])
   const armRefs = useRef<(THREE.Mesh | null)[]>([])
   const xArmRefs = useRef<(THREE.Mesh | null)[]>([])
@@ -49,7 +53,7 @@ export function Suspension({ wheelRefs }: Props) {
       if (!wg || !arm) continue
       const sx = i === 0 || i === 2 ? 1 : -1
       const sz = i === 0 || i === 1 ? 1 : -1
-      fromV.set(sx * f.insetX, f.armMountY, sz * f.zSpan / 2)
+      fromV.set(sx * mountX, mountY, sz * mountZ)
       toV.copy(wg.position); toV.x -= sx * halfWidth
       orient(arm, fromV, toV, f.armRadius)
     }
@@ -60,7 +64,7 @@ export function Suspension({ wheelRefs }: Props) {
       if (!wg || !xArm) continue
       const sx = i === 0 || i === 2 ? 1 : -1
       const sz = i === 0 || i === 1 ? 1 : -1
-      fromV.set(sx * f.insetX, f.armMountY, -sz * f.zSpan / 2)
+      fromV.set(sx * mountX, mountY, -sz * mountZ)
       toV.copy(wg.position); toV.x -= sx * halfWidth
       orient(xArm, fromV, toV, f.xArmRadius)
     }
