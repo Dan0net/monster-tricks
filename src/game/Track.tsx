@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { RigidBody } from '@react-three/rapier'
 import { config } from '../config'
@@ -38,26 +38,50 @@ export function Track() {
   )
 }
 
-function SegmentRenderer({ segment }: { segment: Segment }) {
+const SegmentRenderer = memo(function SegmentRenderer({ segment }: { segment: Segment }) {
   const t = config.track
   const L = segment.endZ - segment.startZ
-  const midY = segment.startY
-  const midZ = (segment.startZ + segment.endZ) / 2
   const W = t.width
+  const midZ = (segment.startZ + segment.endZ) / 2
+
+  const bodyPos = useMemo<[number, number, number]>(
+    () => [0, segment.startY, midZ],
+    [segment.startY, midZ],
+  )
+  const surfacePos = useMemo<[number, number, number]>(
+    () => [0, -t.thickness / 2, 0],
+    [t.thickness],
+  )
+  const surfaceArgs = useMemo<[number, number, number]>(
+    () => [W, t.thickness, L],
+    [W, t.thickness, L],
+  )
+  const rightWallPos = useMemo<[number, number, number]>(
+    () => [W / 2 + t.wallThickness / 2, t.wallHeight / 2, 0],
+    [W, t.wallThickness, t.wallHeight],
+  )
+  const leftWallPos = useMemo<[number, number, number]>(
+    () => [-(W / 2 + t.wallThickness / 2), t.wallHeight / 2, 0],
+    [W, t.wallThickness, t.wallHeight],
+  )
+  const wallArgs = useMemo<[number, number, number]>(
+    () => [t.wallThickness, t.wallHeight, L],
+    [t.wallThickness, t.wallHeight, L],
+  )
 
   return (
     <>
-      <RigidBody type="fixed" colliders="cuboid" position={[0, midY, midZ]}>
-        <mesh receiveShadow position={[0, -t.thickness / 2, 0]}>
-          <boxGeometry args={[W, t.thickness, L]} />
+      <RigidBody type="fixed" colliders="cuboid" position={bodyPos}>
+        <mesh receiveShadow position={surfacePos}>
+          <boxGeometry args={surfaceArgs} />
           <meshStandardMaterial color={t.surfaceColor} />
         </mesh>
-        <mesh castShadow position={[W / 2 + t.wallThickness / 2, t.wallHeight / 2, 0]}>
-          <boxGeometry args={[t.wallThickness, t.wallHeight, L]} />
+        <mesh castShadow position={rightWallPos}>
+          <boxGeometry args={wallArgs} />
           <meshStandardMaterial color={t.wallColor} emissive={t.wallGlow} emissiveIntensity={0.35} />
         </mesh>
-        <mesh castShadow position={[-(W / 2 + t.wallThickness / 2), t.wallHeight / 2, 0]}>
-          <boxGeometry args={[t.wallThickness, t.wallHeight, L]} />
+        <mesh castShadow position={leftWallPos}>
+          <boxGeometry args={wallArgs} />
           <meshStandardMaterial color={t.wallColor} emissive={t.wallGlow} emissiveIntensity={0.35} />
         </mesh>
       </RigidBody>
@@ -66,4 +90,4 @@ function SegmentRenderer({ segment }: { segment: Segment }) {
       ))}
     </>
   )
-}
+})
