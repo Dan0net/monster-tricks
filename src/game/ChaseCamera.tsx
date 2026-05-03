@@ -8,6 +8,11 @@ import { useGame } from '../store'
 
 const desired = new THREE.Vector3()
 
+const cameraSnapSignal = { pending: false }
+export function requestCameraSnap() {
+  cameraSnapSignal.pending = true
+}
+
 export function ChaseCamera() {
   const { camera } = useThree()
   const yaw = useRef(0)
@@ -49,8 +54,9 @@ export function ChaseCamera() {
     const truckYaw = tw2 > c.yawHoldThreshold ? 2 * Math.atan2(ro.y, ro.w) : lastTruckYaw.current
 
     let snapping = false
-    if (snapNext.current) {
+    if (snapNext.current || cameraSnapSignal.pending) {
       snapNext.current = false
+      cameraSnapSignal.pending = false
       snapping = true
       yaw.current = 0
       pitch.current = 0

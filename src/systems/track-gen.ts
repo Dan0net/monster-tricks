@@ -52,32 +52,19 @@ function pickShape(r: () => number): ObstacleShape {
   return 'tabletop'
 }
 
-function makeBump<S extends ObstacleShape>(
-  shape: S,
-  r: () => number,
-  segLen: number,
-  sideX: number,
-  sideW: number,
-  dims: { heightMin: number; heightMax: number; rampLengthMin: number; rampLengthMax: number; topLengthMin: number; topLengthMax: number },
-): Obstacle[] {
+type BumpDims = { heightMin: number; heightMax: number; rampLengthMin: number; rampLengthMax: number; topLengthMin: number; topLengthMax: number }
+
+function genBumpSize(r: () => number, dims: BumpDims) {
   const cell = config.track.surfaceGridSize
   const height = lerp(dims.heightMin, dims.heightMax, r())
   const rampLength = Math.max(cell, snap(lerp(dims.rampLengthMin, dims.rampLengthMax, r()), cell))
   const topLength = Math.max(cell, snap(lerp(dims.topLengthMin, dims.topLengthMax, r()), cell))
-  const total = 2 * rampLength + topLength
-  const z = snap(segLen / 2 - total / 2, cell)
-  if (r() < config.obstacles.pairedProb) {
-    return [
-      { shape, z, xOffset: -sideX, width: sideW, height, rampLength, topLength } as Obstacle,
-      { shape, z, xOffset: sideX, width: sideW, height, rampLength, topLength } as Obstacle,
-    ]
-  }
-  return [{ shape, z, xOffset: 0, width: sideW, height, rampLength, topLength } as Obstacle]
+  return { height, rampLength, topLength, total: 2 * rampLength + topLength }
 }
 
 export function genSegment(index: number, prevEndY: number, prevEndZ: number, seed: number): Segment {
   const r = mulberry32(seed + index * 1009 + 17)
-  const length = config.track.segmentLength
+  const baseLen = config.track.segmentLength
   const W = config.track.width
   const o = config.obstacles
   const cell = config.track.surfaceGridSize
@@ -86,10 +73,21 @@ export function genSegment(index: number, prevEndY: number, prevEndZ: number, se
 
   const finishIdx = config.track.checkpoints[config.track.checkpoints.length - 1]
   let obstacles: Obstacle[] = []
+  let length = baseLen
   if (index >= config.track.startEmptySegments && index < finishIdx) {
     const shape = pickShape(r)
     const dims = shape === 'quarterpipe' ? o.quarterpipe : o.tabletop
-    obstacles = makeBump(shape, r, length, sideX, sideW, dims)
+    const { height, rampLength, topLength, total } = genBumpSize(r, dims)
+    length = Math.max(baseLen, snap(total + 2 * o.gapZ, cell))
+    const z = snap(length / 2 - total / 2, cell)
+    const paired = r() < o.pairedProb
+    const base = { shape, z, height, rampLength, topLength }
+    obstacles = paired
+      ? [
+          { ...base, xOffset: -sideX, width: sideW } as Obstacle,
+          { ...base, xOffset: sideX, width: sideW } as Obstacle,
+        ]
+      : [{ ...base, xOffset: 0, width: sideW } as Obstacle]
   }
 
   return {

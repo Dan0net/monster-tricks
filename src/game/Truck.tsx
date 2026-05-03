@@ -18,6 +18,7 @@ import { useGame } from '../store'
 import { Chassis } from './Chassis'
 import { Wheel } from './Wheel'
 import { Suspension } from './Suspension'
+import { requestCameraSnap } from './ChaseCamera'
 import { wheelCs, buildEllipsoidPoints } from '../systems/truck-geometry'
 
 const susDir = { x: 0, y: -1, z: 0 }
@@ -68,19 +69,30 @@ export function Truck() {
   const phase = useGame((s) => s.phase)
   useGame((s) => s.tuneRev)
 
-  const respawn = (toSpawn = false) => {
+  const respawn = (mode: 'inplace' | 'spawn' | 'nearestSegment' = 'nearestSegment') => {
     const chassis = chassisRef.current
     if (!chassis) return
     const t = config.truck
     const cur = chassis.translation()
-    const x = toSpawn ? t.spawnX : cur.x
-    const z = toSpawn ? t.spawnZ : cur.z
+    let x = cur.x
+    let z = cur.z
+    if (mode === 'spawn') {
+      x = t.spawnX
+      z = t.spawnZ
+    } else if (mode === 'nearestSegment') {
+      const seg = config.track.segmentLength
+      const buf = config.track.startBuffer
+      const idx = Math.max(0, Math.floor((cur.z + buf) / seg))
+      x = 0
+      z = idx * seg - buf
+    }
     chassis.setTranslation({ x, y: t.spawnY, z }, true)
     chassis.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true)
     chassis.setLinvel({ x: 0, y: 0, z: 0 }, true)
     chassis.setAngvel({ x: 0, y: 0, z: 0 }, true)
     applied.current = 0
     appliedSteer.current = 0
+    requestCameraSnap()
   }
   const respawnRef = useRef(respawn)
   respawnRef.current = respawn
@@ -106,7 +118,7 @@ export function Truck() {
     if (phase !== 'playing') return
     Object.assign(scoringRef.current!, initScoring())
     Object.assign(checkpointsRef.current!, initCheckpoints())
-    respawnRef.current(true)
+    respawnRef.current('spawn')
   }, [phase])
 
   useEffect(() => {
@@ -275,6 +287,7 @@ export function Truck() {
       })
     }
 
+    const playing = useGame.getState().phase === 'playing'
     const ev = updateScoring(scoringRef.current!, {
       dt: w.timestep,
       speed: Math.hypot(lv.x, lv.y, lv.z),
@@ -284,9 +297,12 @@ export function Truck() {
       yPos: ct.y,
       angvelLocalX: angvelLocal.x,
       angvelLocalZ: angvelLocal.z,
-      playing: useGame.getState().phase === 'playing',
+      playing,
     })
     dispatchEvents(ev)
+    if (playing && ct.y < config.scoring.fallY) {
+      respawnRef.current('nearestSegment')
+    }
 
     for (let i = 0; i < wheelCount; i++) {
       const g = wheelRefs.current[i]
