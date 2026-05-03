@@ -1,5 +1,5 @@
 import { useFrame, useThree } from '@react-three/fiber'
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { config } from '../config'
 import { input } from '../systems/input'
@@ -13,6 +13,12 @@ export function ChaseCamera() {
   const yaw = useRef(0)
   const pitch = useRef(0)
   const lastTruckYaw = useRef(0)
+  const snapNext = useRef(false)
+  const phase = useGame((s) => s.phase)
+
+  useEffect(() => {
+    if (phase === 'playing') snapNext.current = true
+  }, [phase])
 
   useFrame((state, dt) => {
     const body = truckBody.current
@@ -37,6 +43,22 @@ export function ChaseCamera() {
       return
     }
 
+    const ro = body.rotation()
+    const tr = body.translation()
+    const tw2 = ro.y * ro.y + ro.w * ro.w
+    const truckYaw = tw2 > c.yawHoldThreshold ? 2 * Math.atan2(ro.y, ro.w) : lastTruckYaw.current
+
+    let snapping = false
+    if (snapNext.current) {
+      snapNext.current = false
+      snapping = true
+      yaw.current = 0
+      pitch.current = 0
+      lastTruckYaw.current = truckYaw
+      input.mouseDX = 0
+      input.mouseDY = 0
+    }
+
     if (input.mouseDX !== 0 || input.mouseDY !== 0) {
       yaw.current -= input.mouseDX * c.sensitivity
       pitch.current -= input.mouseDY * c.sensitivity
@@ -48,12 +70,8 @@ export function ChaseCamera() {
       pitch.current *= c.decay
     }
 
-    const tr = body.translation()
-    const ro = body.rotation()
-    const tw2 = ro.y * ro.y + ro.w * ro.w
-    const target = tw2 > c.yawHoldThreshold ? 2 * Math.atan2(ro.y, ro.w) : lastTruckYaw.current
     const TAU = Math.PI * 2
-    let delta = (target - lastTruckYaw.current + Math.PI) % TAU
+    let delta = (truckYaw - lastTruckYaw.current + Math.PI) % TAU
     if (delta < 0) delta += TAU
     delta -= Math.PI
     lastTruckYaw.current += delta * (1 - Math.exp(-c.yawDampSpeed * dt))
@@ -65,7 +83,8 @@ export function ChaseCamera() {
       tr.y + c.height + Math.sin(pitch.current) * c.distance,
       tr.z - Math.cos(a) * c.distance * cp,
     )
-    camera.position.lerp(desired, c.lerp)
+    if (snapping) camera.position.copy(desired)
+    else camera.position.lerp(desired, c.lerp)
     camera.lookAt(tr.x, tr.y + c.lookHeight, tr.z)
   })
 

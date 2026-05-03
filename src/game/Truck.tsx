@@ -283,7 +283,7 @@ export function Truck() {
     const cp = checkpointsRef.current!
     const g = useGame.getState()
 
-    let endNow = false
+    let result: 'finished' | 'expired' | null = null
     if (g.phase === 'playing') {
       const body = chassisRef.current
       if (body) {
@@ -292,9 +292,14 @@ export function Truck() {
           s.score += s.pendingAirScore
           s.pendingAirScore = 0
           s.airborne = false
-          endNow = true
+          result = 'finished'
         } else if (tick.expired) {
-          endNow = true
+          s.score += s.pendingAirScore
+          s.pendingAirScore = 0
+          s.airborne = false
+          result = 'expired'
+        } else if (tick.hit) {
+          g.pulseCpHit()
         }
       }
     }
@@ -313,7 +318,8 @@ export function Truck() {
       checkpointIndex: cp.nextIndex,
     })
 
-    if (endNow) g.finish(s.score)
+    if (result === 'finished') g.finish(s.score)
+    else if (result === 'expired') g.timeOut(s.score)
   })
 
   const t = config.truck

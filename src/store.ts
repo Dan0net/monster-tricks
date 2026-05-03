@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { addHighScore, loadHighScores, saveHighScores, type HighScore } from './systems/highscores'
 import { config } from './config'
 
-export type Phase = 'menu' | 'playing' | 'finished'
+export type Phase = 'menu' | 'playing' | 'finished' | 'expired'
 
 type Live = {
   score: number
@@ -25,6 +25,7 @@ type State = Live & {
   flipPulse: number
   landPulse: number
   lossPulse: number
+  cpHitPulse: number
   lastLand: number
   lastLoss: number
   lastLossMul: number
@@ -34,11 +35,13 @@ type State = Live & {
   start: () => void
   end: () => void
   finish: (finalScore: number) => void
+  timeOut: (finalScore: number) => void
   setLive: (data: Live) => void
   bumpTune: () => void
   pulseFlip: () => void
   pulseLand: (amount: number) => void
   pulseLoss: (amount: number, mul: number) => void
+  pulseCpHit: () => void
 }
 
 const liveZero: Live = {
@@ -63,6 +66,7 @@ export const useGame = create<State>((set) => ({
   flipPulse: 0,
   landPulse: 0,
   lossPulse: 0,
+  cpHitPulse: 0,
   lastLand: 0,
   lastLoss: 0,
   lastLossMul: 0,
@@ -76,6 +80,7 @@ export const useGame = create<State>((set) => ({
     flipPulse: 0,
     landPulse: 0,
     lossPulse: 0,
+    cpHitPulse: 0,
     lastLand: 0,
     lastLoss: 0,
     lastLossMul: 0,
@@ -88,9 +93,11 @@ export const useGame = create<State>((set) => ({
     saveHighScores(list)
     return { phase: 'finished', highScores: list, finalScore, finalRank: rank }
   }),
+  timeOut: (finalScore) => set({ phase: 'expired', finalScore, finalRank: -1 }),
   setLive: (data) => set(data),
   bumpTune: () => set((s) => ({ tuneRev: s.tuneRev + 1 })),
   pulseFlip: () => set((s) => ({ flipPulse: s.flipPulse + 1 })),
   pulseLand: (amount) => set((s) => ({ landPulse: s.landPulse + 1, lastLand: amount })),
   pulseLoss: (amount, mul) => set((s) => ({ lossPulse: s.lossPulse + 1, lastLoss: amount, lastLossMul: mul })),
+  pulseCpHit: () => set((s) => ({ cpHitPulse: s.cpHitPulse + 1 })),
 }))

@@ -4,6 +4,7 @@ import { Game } from './game/Game'
 import { HUD } from './game/HUD'
 import { TunePanel } from './game/TunePanel'
 import { HighScores } from './game/HighScores'
+import { OutOfTime } from './game/OutOfTime'
 
 export default function App() {
   const phase = useGame((s) => s.phase)
@@ -19,7 +20,7 @@ export default function App() {
   }, [end])
 
   useEffect(() => {
-    if (phase === 'finished') document.exitPointerLock?.()
+    if (phase !== 'playing') document.exitPointerLock?.()
   }, [phase])
 
   const onPlay = async () => {
@@ -43,6 +44,7 @@ export default function App() {
         </div>
       )}
       {phase === 'finished' && <HighScores onPlayAgain={onPlay} />}
+      {phase === 'expired' && <OutOfTime onPlayAgain={onPlay} />}
     </>
   )
 }

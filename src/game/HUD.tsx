@@ -36,10 +36,12 @@ export function HUD() {
 
   const timeRemaining = useGame((s) => s.timeRemaining)
   const checkpointIndex = useGame((s) => s.checkpointIndex)
+  const cpHitPulse = useGame((s) => s.cpHitPulse)
 
   const flipping = usePulse(flipPulse, 400)
   const landing = usePulse(landPulse, 800)
   const losing = usePulse(lossPulse, 700)
+  const cpHit = usePulse(cpHitPulse, 700)
 
   if (phase !== 'playing') return null
 
@@ -48,9 +50,12 @@ export function HUD() {
   const speedMul = Math.floor(maxSpeed / config.scoring.speedPerMul)
   const flipMul = flips * config.scoring.flipMulBonus
   const totalCheckpoints = config.track.checkpoints.length
-  const timerLow = timeRemaining < 5
+  const timerLow = timeRemaining > 0 && timeRemaining < 10
+  const timerCrit = timeRemaining > 0 && timeRemaining < 5
   const cpDisplay = Math.min(checkpointIndex + 1, totalCheckpoints)
   const isFinalCp = cpDisplay === totalCheckpoints
+  const flashSec = Math.ceil(timeRemaining)
+  const showFlash = timeRemaining > 0 && flashSec >= 1 && flashSec <= 3
 
   return (
     <div className={`hud ${losing ? 'hud-shake' : ''}`}>
@@ -102,13 +107,18 @@ export function HUD() {
       )}
 
       <div className="hud-timer-wrap">
-        <div className={`hud-timer ${timerLow ? 'hud-timer-low' : ''}`}>
+        <div
+          key={`timer-${cpHitPulse}`}
+          className={`hud-timer ${timerLow ? 'is-low' : ''} ${timerCrit ? 'is-crit' : ''} ${cpHit ? 'is-success' : ''}`}
+        >
           {timeRemaining.toFixed(1)}
         </div>
         <div className="hud-timer-label">
           {isFinalCp ? 'Finish' : `Checkpoint ${cpDisplay}/${totalCheckpoints}`}
         </div>
       </div>
+
+      {showFlash && <div key={`flash-${flashSec}`} className="hud-flash">{flashSec}</div>}
     </div>
   )
 }
