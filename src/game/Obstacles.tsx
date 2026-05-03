@@ -3,7 +3,17 @@ import { RigidBody, TrimeshCollider } from '@react-three/rapier'
 import * as THREE from 'three'
 import { config } from '../config'
 import type { Obstacle, Segment } from '../systems/track-gen'
-import { buildObstacleGeometry } from '../systems/obstacle-mesh'
+import { buildObstacleGeometry, buildEdgeRibbon } from '../systems/obstacle-mesh'
+import { getObstacleEdgeMaterial } from './EdgeMaterial'
+
+function buildEdgeGeometry(o: Obstacle, side: 1 | -1, width: number): THREE.BufferGeometry {
+  const { positions, uvs, indices } = buildEdgeRibbon(o, side, width)
+  const g = new THREE.BufferGeometry()
+  g.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  g.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
+  g.setIndex(new THREE.BufferAttribute(indices, 1))
+  return g
+}
 
 export const ObstacleRenderer = memo(function ObstacleRenderer({
   segment,
@@ -12,7 +22,7 @@ export const ObstacleRenderer = memo(function ObstacleRenderer({
   segment: Segment
   obstacle: Obstacle
 }) {
-  const { colliderArgs, geometry } = useMemo(() => {
+  const { colliderArgs, geometry, edges } = useMemo(() => {
     const { positions, indices } = buildObstacleGeometry(obstacle)
     const g = new THREE.BufferGeometry()
     g.setAttribute('position', new THREE.BufferAttribute(positions, 3))
@@ -20,7 +30,13 @@ export const ObstacleRenderer = memo(function ObstacleRenderer({
     const nonIndexed = g.toNonIndexed()
     g.dispose()
     nonIndexed.computeVertexNormals()
-    return { colliderArgs: [positions, indices] as [Float32Array, Uint16Array], geometry: nonIndexed }
+    const w = config.track.obstacleEdgeWidth
+    const edges = [buildEdgeGeometry(obstacle, 1, w), buildEdgeGeometry(obstacle, -1, w)]
+    return {
+      colliderArgs: [positions, indices] as [Float32Array, Uint16Array],
+      geometry: nonIndexed,
+      edges,
+    }
   }, [obstacle])
 
   const position = useMemo<[number, number, number]>(
@@ -28,7 +44,13 @@ export const ObstacleRenderer = memo(function ObstacleRenderer({
     [obstacle, segment.startY, segment.startZ],
   )
 
-  useEffect(() => () => geometry.dispose(), [geometry])
+  useEffect(
+    () => () => {
+      geometry.dispose()
+      edges.forEach((g) => g.dispose())
+    },
+    [geometry, edges],
+  )
 
   const c = config.track.obstacleColor
   return (
@@ -37,6 +59,9 @@ export const ObstacleRenderer = memo(function ObstacleRenderer({
       <mesh castShadow geometry={geometry}>
         <meshStandardMaterial color={c} emissive={c} emissiveIntensity={0.3} />
       </mesh>
+      {edges.map((g, i) => (
+        <mesh key={i} geometry={g} material={getObstacleEdgeMaterial()} renderOrder={1} />
+      ))}
     </RigidBody>
   )
 })

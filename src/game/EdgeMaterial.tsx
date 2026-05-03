@@ -32,27 +32,39 @@ void main() {
 }
 `
 
-let cached: THREE.ShaderMaterial | null = null
-
-export function getEdgeMaterial(): THREE.ShaderMaterial {
-  if (cached) return cached
-  const t = config.track
+function makeMaterial(coreColor: string, haloColor: string, coreFrac: number, brightness: number): THREE.ShaderMaterial {
   const uniforms = THREE.UniformsUtils.merge([
     THREE.UniformsLib.fog,
     {
-      coreColor: { value: new THREE.Color(t.edgeCoreColor) },
-      haloColor: { value: new THREE.Color(t.edgeColor) },
-      coreFrac: { value: t.edgeCoreFrac },
-      brightness: { value: t.edgeBrightness },
+      coreColor: { value: new THREE.Color(coreColor) },
+      haloColor: { value: new THREE.Color(haloColor) },
+      coreFrac: { value: coreFrac },
+      brightness: { value: brightness },
     },
   ])
-  cached = new THREE.ShaderMaterial({
+  return new THREE.ShaderMaterial({
     vertexShader,
     fragmentShader,
     uniforms,
     transparent: true,
     depthWrite: false,
     fog: true,
+    side: THREE.DoubleSide,
   })
-  return cached
+}
+
+let trackCached: THREE.ShaderMaterial | null = null
+export function getEdgeMaterial(): THREE.ShaderMaterial {
+  if (trackCached) return trackCached
+  const t = config.track
+  trackCached = makeMaterial(t.edgeCoreColor, t.edgeColor, t.edgeCoreFrac, t.edgeBrightness)
+  return trackCached
+}
+
+let obstacleCached: THREE.ShaderMaterial | null = null
+export function getObstacleEdgeMaterial(): THREE.ShaderMaterial {
+  if (obstacleCached) return obstacleCached
+  const t = config.track
+  obstacleCached = makeMaterial(t.edgeCoreColor, t.obstacleColor, t.obstacleEdgeCoreFrac, t.obstacleEdgeBrightness)
+  return obstacleCached
 }

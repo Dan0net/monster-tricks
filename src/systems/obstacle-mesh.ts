@@ -6,7 +6,7 @@ export type ObstacleGeometry = {
   indices: Uint16Array
 }
 
-function outlinePoints(o: Obstacle): { y: number; z: number }[] {
+export function outlinePoints(o: Obstacle): { y: number; z: number }[] {
   const RL = o.rampLength
   const TL = o.topLength
   const H = o.height
@@ -78,4 +78,49 @@ export function buildObstacleGeometry(o: Obstacle): ObstacleGeometry {
   }
 
   return { positions, indices: new Uint16Array(indices) }
+}
+
+export type EdgeRibbon = {
+  positions: Float32Array
+  uvs: Float32Array
+  indices: Uint16Array
+}
+
+export function buildEdgeRibbon(o: Obstacle, side: 1 | -1, width: number): EdgeRibbon {
+  const halfW = o.width / 2
+  const pts = outlinePoints(o)
+  const N = pts.length
+  const w2 = width / 2
+  const yLift = 0.005
+
+  const positions = new Float32Array(N * 2 * 3)
+  const uvs = new Float32Array(N * 2 * 2)
+
+  for (let i = 0; i < N; i++) {
+    const p = pts[i]
+
+    positions[i * 6 + 0] = side * (halfW - w2)
+    positions[i * 6 + 1] = p.y + yLift
+    positions[i * 6 + 2] = p.z
+    positions[i * 6 + 3] = side * (halfW + w2)
+    positions[i * 6 + 4] = p.y + yLift
+    positions[i * 6 + 5] = p.z
+
+    const v = i / (N - 1)
+    uvs[i * 4 + 0] = 0
+    uvs[i * 4 + 1] = v
+    uvs[i * 4 + 2] = 1
+    uvs[i * 4 + 3] = v
+  }
+
+  const indices: number[] = []
+  for (let i = 0; i < N - 1; i++) {
+    const il = 2 * i
+    const ir = 2 * i + 1
+    const jl = 2 * (i + 1)
+    const jr = 2 * (i + 1) + 1
+    indices.push(il, jl, jr, il, jr, ir)
+  }
+
+  return { positions, uvs, indices: new Uint16Array(indices) }
 }
