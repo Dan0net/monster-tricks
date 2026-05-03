@@ -47,7 +47,7 @@ export default function App() {
       {phase === 'menu' && (
         <div className="menu" onClick={onPlay}>
           <div className="menu-inner">
-            <p className="sub">Monster</p>
+            <h1 className="alt">Monster</h1>
             <h1>Tricks</h1>
             <button className="play">Play</button>
           </div>

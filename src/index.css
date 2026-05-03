@@ -38,6 +38,12 @@ html, body, #root {
   text-shadow: 0 0 24px var(--accent2);
 }
 
+.menu h1.alt {
+  margin: 0 0 8px;
+  color: var(--accent);
+  text-shadow: 0 0 24px var(--accent);
+}
+
 .menu .sub {
   margin: 0 0 36px;
   opacity: 0.6;
