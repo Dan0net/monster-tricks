@@ -37,6 +37,11 @@ const baseRotZ90 = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 
 const yAxis = new THREE.Vector3(0, 1, 0)
 const castVel = { x: 0, y: -1, z: 0 }
 const angvelLocal = new THREE.Vector3()
+const linvelV = new THREE.Vector3()
+const angvelV = new THREE.Vector3()
+const rVec = new THREE.Vector3()
+const velAtHub = new THREE.Vector3()
+const fwdWorldV = new THREE.Vector3()
 
 export function Truck() {
   const { rapier, world } = useRapier()
@@ -186,19 +191,27 @@ export function Truck() {
 
     let groundedCount = 0
     for (let i = 0; i < wheelCount; i++) if (ctrl.wheelIsInContact(i)) groundedCount++
-    const fwdSpeed = ctrl.currentVehicleSpeed()
-    const targetOmega = fwdSpeed / t.wheelRadius
+
+    const lv = chassis.linvel()
+    const av = chassis.angvel()
+    linvelV.set(lv.x, lv.y, lv.z)
+    angvelV.set(av.x, av.y, av.z)
+    angvelLocal.set(av.x, av.y, av.z).applyQuaternion(invChassisQ)
+
     for (let i = 0; i < wheelCount; i++) {
+      const cp = wheelCs(i)
+      rVec.set(cp.x, cp.y, cp.z).applyQuaternion(chassisQ)
+      velAtHub.copy(angvelV).cross(rVec).add(linvelV)
+      const steer = ctrl.wheelSteering(i) ?? 0
+      fwdWorldV.set(Math.sin(steer), 0, Math.cos(steer)).applyQuaternion(chassisQ)
+      const rollSpeed = velAtHub.dot(fwdWorldV)
       if (ctrl.wheelIsInContact(i)) {
-        wheelOmega.current[i] = targetOmega
+        wheelOmega.current[i] = rollSpeed / t.wheelRadius
       } else {
         wheelOmega.current[i] = THREE.MathUtils.damp(wheelOmega.current[i], 0, t.airSpinDamp, w.timestep)
       }
       spinAccum.current[i] += wheelOmega.current[i] * w.timestep
     }
-    const lv = chassis.linvel()
-    const av = chassis.angvel()
-    angvelLocal.set(av.x, av.y, av.z).applyQuaternion(invChassisQ)
 
     let topContact = false
     const chassisCollider = chassisColliderRef.current

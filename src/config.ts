@@ -102,19 +102,19 @@ export const config = {
     rimColor: '#2dd4ff',
     rimGlow: '#2dd4ff',
     treadBlocks: 16,
+    treadAxleOffsetFrac: 0.25,
+    treadAxialFrac: 0.4,
+    treadChevronAngle: 0.6,
     spokes: 5,
     airSpinDamp: 1.0,
 
     frame: {
       insetX: 0.7,
-      y: -0.2,
       zSpan: 4.0,
-      railRadius: 0.06,
       axleRadius: 0.12,
       armRadius: 0.08,
       xArmRadius: 0.05,
       armMountY: -0.1,
-      railColor: '#3a3a4a',
       blueColor: '#2dd4ff',
     },
 
