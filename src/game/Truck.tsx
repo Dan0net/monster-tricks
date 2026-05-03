@@ -276,7 +276,7 @@ export function Truck() {
 
   const t = config.truck
   const domeHalfY = (t.chassisY + t.cabY) / 2
-  const domeCenterY = t.cabY / 2
+  const domeCenterY = t.bodyY + t.cabY / 2
   const bodyPts = useMemo(
     () => buildEllipsoidPoints(t.chassisX / 2, domeHalfY, t.chassisZ / 2),
     [t.chassisX, t.chassisZ, domeHalfY],

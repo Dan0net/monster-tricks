@@ -84,6 +84,7 @@ export const config = {
     cabXFrac: 0.62,
     cabZFrac: 0.4,
     cabZOffset: 0.18,
+    bodyY: 0.25,
 
     comX: 0,
     comY: -1.5,
@@ -111,8 +112,10 @@ export const config = {
       railRadius: 0.06,
       axleRadius: 0.12,
       armRadius: 0.08,
+      xArmRadius: 0.05,
       armMountY: -0.1,
-      color: '#3a3a4a',
+      railColor: '#3a3a4a',
+      blueColor: '#2dd4ff',
     },
 
     suspensionRest: 1.5,

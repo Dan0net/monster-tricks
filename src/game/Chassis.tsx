@@ -13,10 +13,10 @@ export function Chassis() {
 
   return (
     <group>
-      <RoundedBox args={[bodyW, bodyH, bodyD]} radius={t.bevelRadius} smoothness={3} position={[0, 0, 0]} castShadow>
+      <RoundedBox args={[bodyW, bodyH, bodyD]} radius={t.bevelRadius} smoothness={3} position={[0, t.bodyY, 0]} castShadow>
         <meshStandardMaterial color={t.bodyColor} roughness={0.55} metalness={0.25} />
       </RoundedBox>
-      <RoundedBox args={[cabW, cabH, cabD]} radius={t.bevelRadius * 0.7} smoothness={3} position={[0, bodyH / 2 + cabH / 2, cabZ]} castShadow>
+      <RoundedBox args={[cabW, cabH, cabD]} radius={t.bevelRadius * 0.7} smoothness={3} position={[0, t.bodyY + bodyH / 2 + cabH / 2, cabZ]} castShadow>
         <meshStandardMaterial color={t.cabColor} roughness={0.6} metalness={0.2} />
       </RoundedBox>
     </group>

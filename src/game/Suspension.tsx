@@ -6,6 +6,7 @@ import { config } from '../config'
 const yAxis = new THREE.Vector3(0, 1, 0)
 const dirV = new THREE.Vector3()
 const fromV = new THREE.Vector3()
+const toV = new THREE.Vector3()
 
 function orient(mesh: THREE.Mesh, from: THREE.Vector3, to: THREE.Vector3, radius: number) {
   dirV.subVectors(to, from)
@@ -19,16 +20,29 @@ function orient(mesh: THREE.Mesh, from: THREE.Vector3, to: THREE.Vector3, radius
 type Props = { wheelRefs: { current: (THREE.Group | null)[] } }
 
 export function Suspension({ wheelRefs }: Props) {
-  const f = config.truck.frame
+  const t = config.truck
+  const f = t.frame
+  const halfWidth = t.wheelWidth / 2
   const axleRefs = useRef<(THREE.Mesh | null)[]>([])
   const armRefs = useRef<(THREE.Mesh | null)[]>([])
+  const xArmRefs = useRef<(THREE.Mesh | null)[]>([])
 
   useFrame(() => {
     const wRefs = wheelRefs.current
     if (!wRefs) return
     const w0 = wRefs[0], w1 = wRefs[1], w2 = wRefs[2], w3 = wRefs[3]
-    if (axleRefs.current[0] && w0 && w1) orient(axleRefs.current[0], w1.position, w0.position, f.axleRadius)
-    if (axleRefs.current[1] && w2 && w3) orient(axleRefs.current[1], w3.position, w2.position, f.axleRadius)
+
+    if (axleRefs.current[0] && w0 && w1) {
+      fromV.copy(w1.position); fromV.x += halfWidth
+      toV.copy(w0.position); toV.x -= halfWidth
+      orient(axleRefs.current[0], fromV, toV, f.axleRadius)
+    }
+    if (axleRefs.current[1] && w2 && w3) {
+      fromV.copy(w3.position); fromV.x += halfWidth
+      toV.copy(w2.position); toV.x -= halfWidth
+      orient(axleRefs.current[1], fromV, toV, f.axleRadius)
+    }
+
     for (let i = 0; i < 4; i++) {
       const wg = wRefs[i]
       const arm = armRefs.current[i]
@@ -36,7 +50,19 @@ export function Suspension({ wheelRefs }: Props) {
       const sx = i === 0 || i === 2 ? 1 : -1
       const sz = i === 0 || i === 1 ? 1 : -1
       fromV.set(sx * f.insetX, f.armMountY, sz * f.zSpan / 2)
-      orient(arm, fromV, wg.position, f.armRadius)
+      toV.copy(wg.position); toV.x -= sx * halfWidth
+      orient(arm, fromV, toV, f.armRadius)
+    }
+
+    for (let i = 0; i < 4; i++) {
+      const wg = wRefs[i]
+      const xArm = xArmRefs.current[i]
+      if (!wg || !xArm) continue
+      const sx = i === 0 || i === 2 ? 1 : -1
+      const sz = i === 0 || i === 1 ? 1 : -1
+      fromV.set(sx * f.insetX, f.armMountY, -sz * f.zSpan / 2)
+      toV.copy(wg.position); toV.x -= sx * halfWidth
+      orient(xArm, fromV, toV, f.xArmRadius)
     }
   })
 
@@ -44,30 +70,36 @@ export function Suspension({ wheelRefs }: Props) {
     <group>
       <mesh position={[-f.insetX, f.y, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
         <cylinderGeometry args={[f.railRadius, f.railRadius, f.zSpan, 8]} />
-        <meshStandardMaterial color={f.color} metalness={0.6} roughness={0.4} />
+        <meshStandardMaterial color={f.railColor} metalness={0.6} roughness={0.4} />
       </mesh>
       <mesh position={[f.insetX, f.y, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
         <cylinderGeometry args={[f.railRadius, f.railRadius, f.zSpan, 8]} />
-        <meshStandardMaterial color={f.color} metalness={0.6} roughness={0.4} />
+        <meshStandardMaterial color={f.railColor} metalness={0.6} roughness={0.4} />
       </mesh>
       <mesh position={[0, f.y, f.zSpan / 2]} rotation={[0, 0, Math.PI / 2]} castShadow>
         <cylinderGeometry args={[f.railRadius, f.railRadius, 2 * f.insetX, 8]} />
-        <meshStandardMaterial color={f.color} metalness={0.6} roughness={0.4} />
+        <meshStandardMaterial color={f.railColor} metalness={0.6} roughness={0.4} />
       </mesh>
       <mesh position={[0, f.y, -f.zSpan / 2]} rotation={[0, 0, Math.PI / 2]} castShadow>
         <cylinderGeometry args={[f.railRadius, f.railRadius, 2 * f.insetX, 8]} />
-        <meshStandardMaterial color={f.color} metalness={0.6} roughness={0.4} />
+        <meshStandardMaterial color={f.railColor} metalness={0.6} roughness={0.4} />
       </mesh>
       {[0, 1].map((i) => (
         <mesh key={i} ref={(el) => { axleRefs.current[i] = el }} castShadow>
           <cylinderGeometry args={[1, 1, 1, 12]} />
-          <meshStandardMaterial color={f.color} metalness={0.7} roughness={0.3} />
+          <meshStandardMaterial color={f.blueColor} emissive={f.blueColor} emissiveIntensity={0.4} metalness={0.7} roughness={0.3} />
         </mesh>
       ))}
       {[0, 1, 2, 3].map((i) => (
         <mesh key={i} ref={(el) => { armRefs.current[i] = el }} castShadow>
           <cylinderGeometry args={[1, 1, 1, 8]} />
-          <meshStandardMaterial color={f.color} metalness={0.6} roughness={0.4} />
+          <meshStandardMaterial color={f.blueColor} emissive={f.blueColor} emissiveIntensity={0.4} metalness={0.6} roughness={0.4} />
+        </mesh>
+      ))}
+      {[0, 1, 2, 3].map((i) => (
+        <mesh key={i} ref={(el) => { xArmRefs.current[i] = el }} castShadow>
+          <cylinderGeometry args={[1, 1, 1, 8]} />
+          <meshStandardMaterial color={f.blueColor} emissive={f.blueColor} emissiveIntensity={0.4} metalness={0.6} roughness={0.4} />
         </mesh>
       ))}
     </group>
