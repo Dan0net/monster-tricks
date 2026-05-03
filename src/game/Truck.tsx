@@ -13,6 +13,7 @@ import * as THREE from 'three'
 import { config } from '../config'
 import { input } from '../systems/input'
 import { initScoring, manualReset, updateScoring, type ScoringEvents, type ScoringState } from '../systems/scoring'
+import { initCheckpoints, updateCheckpoints, type CheckpointState } from '../systems/checkpoints'
 import { useGame } from '../store'
 import { Chassis } from './Chassis'
 import { Wheel } from './Wheel'
@@ -58,16 +59,20 @@ export function Truck() {
   )
   const scoringRef = useRef<ScoringState | null>(null)
   if (!scoringRef.current) scoringRef.current = initScoring()
+  const checkpointsRef = useRef<CheckpointState | null>(null)
+  if (!checkpointsRef.current) checkpointsRef.current = initCheckpoints()
   const chassisColliderRef = useRef<RAPIER.Collider | null>(null)
   const phase = useGame((s) => s.phase)
   useGame((s) => s.tuneRev)
 
-  const respawn = () => {
+  const respawn = (toSpawn = false) => {
     const chassis = chassisRef.current
     if (!chassis) return
     const t = config.truck
     const cur = chassis.translation()
-    chassis.setTranslation({ x: cur.x, y: t.spawnY, z: cur.z }, true)
+    const x = toSpawn ? t.spawnX : cur.x
+    const z = toSpawn ? t.spawnZ : cur.z
+    chassis.setTranslation({ x, y: t.spawnY, z }, true)
     chassis.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true)
     chassis.setLinvel({ x: 0, y: 0, z: 0 }, true)
     chassis.setAngvel({ x: 0, y: 0, z: 0 }, true)
@@ -97,7 +102,8 @@ export function Truck() {
   useEffect(() => {
     if (phase !== 'playing') return
     Object.assign(scoringRef.current!, initScoring())
-    respawnRef.current()
+    Object.assign(checkpointsRef.current!, initCheckpoints())
+    respawnRef.current(true)
   }, [phase])
 
   useEffect(() => {
@@ -272,9 +278,28 @@ export function Truck() {
     }
   })
 
-  useFrame(() => {
+  useFrame((_, dt) => {
     const s = scoringRef.current!
-    useGame.getState().setLive({
+    const cp = checkpointsRef.current!
+    const g = useGame.getState()
+
+    let endNow = false
+    if (g.phase === 'playing') {
+      const body = chassisRef.current
+      if (body) {
+        const tick = updateCheckpoints(cp, body.translation().z, dt)
+        if (tick.finished) {
+          s.score += s.pendingAirScore
+          s.pendingAirScore = 0
+          s.airborne = false
+          endNow = true
+        } else if (tick.expired) {
+          endNow = true
+        }
+      }
+    }
+
+    g.setLive({
       score: s.score,
       multiplier: s.multiplier,
       pendingAirScore: s.pendingAirScore,
@@ -284,7 +309,11 @@ export function Truck() {
       airborne: s.airborne,
       pitchDeg: (s.pitchAccum * 180) / Math.PI,
       rollDeg: (s.rollAccum * 180) / Math.PI,
+      timeRemaining: cp.timeRemaining,
+      checkpointIndex: cp.nextIndex,
     })
+
+    if (endNow) g.finish(s.score)
   })
 
   const t = config.truck

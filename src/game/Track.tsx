@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { RigidBody } from '@react-three/rapier'
 import { config } from '../config'
@@ -7,22 +7,41 @@ import { truckBody } from './Truck'
 import { ObstacleRenderer } from './Obstacles'
 import { getGridMaterial } from './GridMaterial'
 import { getEdgeMaterial } from './EdgeMaterial'
+import { Gates } from './Gates'
+import { useGame } from '../store'
+
+function lastSegmentIndex() {
+  const t = config.track
+  const finish = t.checkpoints[t.checkpoints.length - 1]
+  return finish + t.postFinishSegments - 1
+}
+
+function buildInitial(): Segment[] {
+  const t = config.track
+  const count = Math.min(t.initialCount, lastSegmentIndex() + 1)
+  return genSegments(t.seed, 0, count, 0, -t.startBuffer)
+}
 
 export function Track() {
   const t = config.track
-  const [segments, setSegments] = useState<Segment[]>(() =>
-    genSegments(t.seed, 0, t.initialCount, 0, -t.startBuffer),
-  )
+  const phase = useGame((s) => s.phase)
+  const [segments, setSegments] = useState<Segment[]>(buildInitial)
+
+  useEffect(() => {
+    if (phase !== 'playing') return
+    setSegments(buildInitial())
+  }, [phase])
 
   useFrame(() => {
     const body = truckBody.current
     if (!body) return
     const z = body.translation().z
+    const maxIdx = lastSegmentIndex()
     setSegments((prev) => {
       const last = prev[prev.length - 1]
       const trimIdx = prev.findIndex((s) => s.endZ > z - t.trimBehind)
       const startIdx = trimIdx < 0 ? 0 : trimIdx
-      const needAdd = z > last.endZ - t.generateAhead
+      const needAdd = z > last.endZ - t.generateAhead && last.index < maxIdx
       if (!needAdd && startIdx === 0) return prev
       const trimmed = startIdx > 0 ? prev.slice(startIdx) : prev
       if (!needAdd) return trimmed
@@ -36,6 +55,7 @@ export function Track() {
       {segments.map((s) => (
         <SegmentRenderer key={s.index} segment={s} />
       ))}
+      <Gates />
     </>
   )
 }

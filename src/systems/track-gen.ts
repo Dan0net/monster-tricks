@@ -40,6 +40,10 @@ function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t
 }
 
+function snap(v: number, step: number) {
+  return Math.round(v / step) * step
+}
+
 function pickShape(r: () => number): ObstacleShape {
   const o = config.obstacles
   const total = o.quarterpipeProb + o.tabletopProb
@@ -56,11 +60,12 @@ function makeBump<S extends ObstacleShape>(
   sideW: number,
   dims: { heightMin: number; heightMax: number; rampLengthMin: number; rampLengthMax: number; topLengthMin: number; topLengthMax: number },
 ): Obstacle[] {
+  const cell = config.track.surfaceGridSize
   const height = lerp(dims.heightMin, dims.heightMax, r())
-  const rampLength = lerp(dims.rampLengthMin, dims.rampLengthMax, r())
-  const topLength = lerp(dims.topLengthMin, dims.topLengthMax, r())
+  const rampLength = Math.max(cell, snap(lerp(dims.rampLengthMin, dims.rampLengthMax, r()), cell))
+  const topLength = Math.max(cell, snap(lerp(dims.topLengthMin, dims.topLengthMax, r()), cell))
   const total = 2 * rampLength + topLength
-  const z = segLen / 2 - total / 2
+  const z = snap(segLen / 2 - total / 2, cell)
   if (r() < config.obstacles.pairedProb) {
     return [
       { shape, z, xOffset: -sideX, width: sideW, height, rampLength, topLength } as Obstacle,
@@ -75,11 +80,13 @@ export function genSegment(index: number, prevEndY: number, prevEndZ: number, se
   const length = config.track.segmentLength
   const W = config.track.width
   const o = config.obstacles
-  const sideW = W * o.widthFrac
-  const sideX = W * o.sideXFrac
+  const cell = config.track.surfaceGridSize
+  const sideW = Math.max(2 * cell, snap(W * o.widthFrac, 2 * cell))
+  const sideX = snap(W * o.sideXFrac, cell)
 
+  const finishIdx = config.track.checkpoints[config.track.checkpoints.length - 1]
   let obstacles: Obstacle[] = []
-  if (index >= config.track.startEmptySegments) {
+  if (index >= config.track.startEmptySegments && index < finishIdx) {
     const shape = pickShape(r)
     const dims = shape === 'quarterpipe' ? o.quarterpipe : o.tabletop
     obstacles = makeBump(shape, r, length, sideX, sideW, dims)

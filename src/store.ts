@@ -1,6 +1,8 @@
 import { create } from 'zustand'
+import { addHighScore, loadHighScores, saveHighScores, type HighScore } from './systems/highscores'
+import { config } from './config'
 
-export type Phase = 'menu' | 'playing'
+export type Phase = 'menu' | 'playing' | 'finished'
 
 type Live = {
   score: number
@@ -12,6 +14,8 @@ type Live = {
   airborne: boolean
   pitchDeg: number
   rollDeg: number
+  timeRemaining: number
+  checkpointIndex: number
 }
 
 type State = Live & {
@@ -24,8 +28,12 @@ type State = Live & {
   lastLand: number
   lastLoss: number
   lastLossMul: number
+  highScores: HighScore[]
+  finalScore: number
+  finalRank: number
   start: () => void
   end: () => void
+  finish: (finalScore: number) => void
   setLive: (data: Live) => void
   bumpTune: () => void
   pulseFlip: () => void
@@ -43,6 +51,8 @@ const liveZero: Live = {
   airborne: false,
   pitchDeg: 0,
   rollDeg: 0,
+  timeRemaining: config.track.checkpointSeconds,
+  checkpointIndex: 0,
 }
 
 export const useGame = create<State>((set) => ({
@@ -56,6 +66,9 @@ export const useGame = create<State>((set) => ({
   lastLand: 0,
   lastLoss: 0,
   lastLossMul: 0,
+  highScores: loadHighScores(),
+  finalScore: 0,
+  finalRank: -1,
   start: () => set({
     phase: 'playing',
     hasPlayed: true,
@@ -66,8 +79,15 @@ export const useGame = create<State>((set) => ({
     lastLand: 0,
     lastLoss: 0,
     lastLossMul: 0,
+    finalScore: 0,
+    finalRank: -1,
   }),
   end: () => set({ phase: 'menu' }),
+  finish: (finalScore) => set((s) => {
+    const { list, rank } = addHighScore(s.highScores, finalScore)
+    saveHighScores(list)
+    return { phase: 'finished', highScores: list, finalScore, finalRank: rank }
+  }),
   setLive: (data) => set(data),
   bumpTune: () => set((s) => ({ tuneRev: s.tuneRev + 1 })),
   pulseFlip: () => set((s) => ({ flipPulse: s.flipPulse + 1 })),

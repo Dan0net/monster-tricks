@@ -3,6 +3,7 @@ import { useGame } from './store'
 import { Game } from './game/Game'
 import { HUD } from './game/HUD'
 import { TunePanel } from './game/TunePanel'
+import { HighScores } from './game/HighScores'
 
 export default function App() {
   const phase = useGame((s) => s.phase)
@@ -16,6 +17,10 @@ export default function App() {
     document.addEventListener('pointerlockchange', onLockChange)
     return () => document.removeEventListener('pointerlockchange', onLockChange)
   }, [end])
+
+  useEffect(() => {
+    if (phase === 'finished') document.exitPointerLock?.()
+  }, [phase])
 
   const onPlay = async () => {
     await document.body.requestPointerLock?.().catch(() => {})
@@ -37,6 +42,7 @@ export default function App() {
           <div className="hint">WASD / Arrows · Mouse to look · R to reset · Esc to exit</div>
         </div>
       )}
+      {phase === 'finished' && <HighScores onPlayAgain={onPlay} />}
     </>
   )
 }

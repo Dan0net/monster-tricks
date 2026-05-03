@@ -34,6 +34,9 @@ export function HUD() {
   const lastLoss = useGame((s) => s.lastLoss)
   const lastLossMul = useGame((s) => s.lastLossMul)
 
+  const timeRemaining = useGame((s) => s.timeRemaining)
+  const checkpointIndex = useGame((s) => s.checkpointIndex)
+
   const flipping = usePulse(flipPulse, 400)
   const landing = usePulse(landPulse, 800)
   const losing = usePulse(lossPulse, 700)
@@ -44,6 +47,10 @@ export function HUD() {
   const showMul = losing ? lastLossMul : multiplier
   const speedMul = Math.floor(maxSpeed / config.scoring.speedPerMul)
   const flipMul = flips * config.scoring.flipMulBonus
+  const totalCheckpoints = config.track.checkpoints.length
+  const timerLow = timeRemaining < 5
+  const cpDisplay = Math.min(checkpointIndex + 1, totalCheckpoints)
+  const isFinalCp = cpDisplay === totalCheckpoints
 
   return (
     <div className={`hud ${losing ? 'hud-shake' : ''}`}>
@@ -93,6 +100,15 @@ export function HUD() {
           <div key={`ring-${landPulse}`} className="hud-bank-ring" />
         </>
       )}
+
+      <div className="hud-timer-wrap">
+        <div className={`hud-timer ${timerLow ? 'hud-timer-low' : ''}`}>
+          {timeRemaining.toFixed(1)}
+        </div>
+        <div className="hud-timer-label">
+          {isFinalCp ? 'Finish' : `Checkpoint ${cpDisplay}/${totalCheckpoints}`}
+        </div>
+      </div>
     </div>
   )
 }
