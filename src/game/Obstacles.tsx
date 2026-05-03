@@ -5,6 +5,7 @@ import { config } from '../config'
 import type { Obstacle, Segment } from '../systems/track-gen'
 import { buildObstacleGeometry, buildEdgeRibbon } from '../systems/obstacle-mesh'
 import { getObstacleEdgeMaterial } from './EdgeMaterial'
+import { getObstacleGridMaterial } from './GridMaterial'
 
 function buildEdgeGeometry(o: Obstacle, side: 1 | -1, width: number): THREE.BufferGeometry {
   const { positions, uvs, indices } = buildEdgeRibbon(o, side, width)
@@ -52,13 +53,10 @@ export const ObstacleRenderer = memo(function ObstacleRenderer({
     [geometry, edges],
   )
 
-  const c = config.track.obstacleColor
   return (
     <RigidBody type="fixed" colliders={false} position={position}>
       <TrimeshCollider args={colliderArgs} />
-      <mesh castShadow geometry={geometry}>
-        <meshStandardMaterial color={c} emissive={c} emissiveIntensity={0.3} />
-      </mesh>
+      <mesh castShadow geometry={geometry} material={getObstacleGridMaterial()} />
       {edges.map((g, i) => (
         <mesh key={i} geometry={g} material={getObstacleEdgeMaterial()} renderOrder={1} />
       ))}
