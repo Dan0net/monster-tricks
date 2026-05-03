@@ -24,13 +24,24 @@ function clone<T>(v: T): T {
   return JSON.parse(JSON.stringify(v))
 }
 
+function stripArrays<T extends object>(src: T): T {
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(src)) {
+    if (Array.isArray(v)) continue
+    out[k] = v
+  }
+  return out as T
+}
+
 function snapshot(): Tune {
-  return clone({ gravityY: config.gravityY, truck: config.truck, camera: config.camera })
+  return clone({ gravityY: config.gravityY, truck: stripArrays(config.truck), camera: config.camera })
 }
 
 function apply(t: Tune): void {
   if (typeof t.gravityY === 'number') config.gravityY = t.gravityY
-  if (t.truck) Object.assign(config.truck, t.truck)
+  if (t.truck) Object.assign(config.truck, stripArrays(t.truck))
+  config.truck.ebrakeWheels = [...DEFAULTS.truck.ebrakeWheels]
+  config.truck.steerWheels = [...DEFAULTS.truck.steerWheels]
   if (t.camera) Object.assign(config.camera, t.camera)
 }
 

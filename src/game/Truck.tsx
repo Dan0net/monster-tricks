@@ -164,7 +164,8 @@ export function Truck() {
     fwdWorldV.set(0, 0, 1).applyQuaternion(chassisQ)
     const fwdSpeed = lv.x * fwdWorldV.x + lv.y * fwdWorldV.y + lv.z * fwdWorldV.z
     const sa = Math.sign(applied.current)
-    const torqueScale = sa === 0 ? 0 : THREE.MathUtils.clamp(1 - (sa * fwdSpeed) / t.topSpeedTarget, 0, 1)
+    const t01 = sa === 0 ? 0 : THREE.MathUtils.clamp(1 - (sa * fwdSpeed) / t.topSpeedTarget, 0, 1)
+    const torqueScale = t01 * t01
     const force = applied.current * t.peakTorque * torqueScale
     const ebrakeOn = playing && input.ebrake > 0
     const speed = Math.hypot(lv.x, lv.z)
