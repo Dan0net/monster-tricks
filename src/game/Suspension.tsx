@@ -68,22 +68,6 @@ export function Suspension({ wheelRefs }: Props) {
 
   return (
     <group>
-      <mesh position={[-f.insetX, f.y, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-        <cylinderGeometry args={[f.railRadius, f.railRadius, f.zSpan, 8]} />
-        <meshStandardMaterial color={f.railColor} metalness={0.6} roughness={0.4} />
-      </mesh>
-      <mesh position={[f.insetX, f.y, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-        <cylinderGeometry args={[f.railRadius, f.railRadius, f.zSpan, 8]} />
-        <meshStandardMaterial color={f.railColor} metalness={0.6} roughness={0.4} />
-      </mesh>
-      <mesh position={[0, f.y, f.zSpan / 2]} rotation={[0, 0, Math.PI / 2]} castShadow>
-        <cylinderGeometry args={[f.railRadius, f.railRadius, 2 * f.insetX, 8]} />
-        <meshStandardMaterial color={f.railColor} metalness={0.6} roughness={0.4} />
-      </mesh>
-      <mesh position={[0, f.y, -f.zSpan / 2]} rotation={[0, 0, Math.PI / 2]} castShadow>
-        <cylinderGeometry args={[f.railRadius, f.railRadius, 2 * f.insetX, 8]} />
-        <meshStandardMaterial color={f.railColor} metalness={0.6} roughness={0.4} />
-      </mesh>
       {[0, 1].map((i) => (
         <mesh key={i} ref={(el) => { axleRefs.current[i] = el }} castShadow>
           <cylinderGeometry args={[1, 1, 1, 12]} />

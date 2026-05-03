@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { Fragment, useMemo } from 'react'
 import * as THREE from 'three'
 import { config } from '../config'
 
@@ -23,12 +23,14 @@ export function Wheel() {
   const sidewallR = tireR * 0.85
   const treadH = tireR * 0.1
   const treadArc = ((2 * Math.PI * tireR) / t.treadBlocks) * 0.6
+  const treadAxial = t.wheelWidth * t.treadAxialFrac
+  const treadOffset = t.wheelWidth * t.treadAxleOffsetFrac
   const spokeLen = rimR * 0.95
   const spokeW = rimR * 0.18
   const treadR = tireR + treadH * 0.25
 
   const tireGeom = useMemo(() => new THREE.LatheGeometry(tireProfile(rimR, sidewallR, tireR, halfW), 28), [tireR, rimR, sidewallR, halfW])
-  const treadGeom = useMemo(() => new THREE.BoxGeometry(treadH, t.wheelWidth * 0.78, treadArc), [treadH, t.wheelWidth, treadArc])
+  const treadGeom = useMemo(() => new THREE.BoxGeometry(treadH, treadAxial, treadArc), [treadH, treadAxial, treadArc])
   const rimGeom = useMemo(() => new THREE.CylinderGeometry(rimR * 1.02, rimR * 1.02, t.wheelWidth * 1.04, 20), [rimR, t.wheelWidth])
   const spokeGeom = useMemo(() => new THREE.BoxGeometry(spokeW, t.wheelWidth * 1.06, spokeLen), [spokeW, t.wheelWidth, spokeLen])
 
@@ -55,14 +57,18 @@ export function Wheel() {
         </mesh>
       ))}
       {treadAngles.map((a, i) => (
-        <mesh
-          key={i}
-          geometry={treadGeom}
-          position={[Math.cos(a) * treadR, 0, Math.sin(a) * treadR]}
-          rotation={[0, -a, 0]}
-        >
-          <meshStandardMaterial color={t.tireColor} roughness={0.95} metalness={0.05} />
-        </mesh>
+        <Fragment key={i}>
+          <group position={[Math.cos(a) * treadR, treadOffset, Math.sin(a) * treadR]} rotation={[0, -a, 0]}>
+            <mesh geometry={treadGeom} rotation={[t.treadChevronAngle, 0, 0]}>
+              <meshStandardMaterial color={t.frame.blueColor} emissive={t.frame.blueColor} emissiveIntensity={0.3} roughness={0.7} metalness={0.2} />
+            </mesh>
+          </group>
+          <group position={[Math.cos(a) * treadR, -treadOffset, Math.sin(a) * treadR]} rotation={[0, -a, 0]}>
+            <mesh geometry={treadGeom} rotation={[-t.treadChevronAngle, 0, 0]}>
+              <meshStandardMaterial color={t.frame.blueColor} emissive={t.frame.blueColor} emissiveIntensity={0.3} roughness={0.7} metalness={0.2} />
+            </mesh>
+          </group>
+        </Fragment>
       ))}
     </group>
   )
