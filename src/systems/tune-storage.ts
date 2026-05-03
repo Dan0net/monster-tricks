@@ -3,6 +3,7 @@ import { config } from '../config'
 
 const KEY = 'monster-tricks/tune'
 const DEFAULT_NAME = 'Default'
+const TRUCK1_NAME = 'truck1'
 
 type Tune = {
   gravityY: number
@@ -18,7 +19,41 @@ const DEFAULTS: Tune = clone({
   camera: config.camera,
 })
 
-let store: Store = { active: DEFAULT_NAME, profiles: { [DEFAULT_NAME]: clone(DEFAULTS) } }
+const TRUCK1_TRUCK_OVERRIDES = {
+  chassisY: 0.7,
+  comY: -0.1,
+  comZ: 0,
+  inertiaPitch: 1500,
+  wheelRadius: 0.9,
+  wheelWidth: 0.8,
+  wheelTrack: 1.13,
+  wheelY: 0.5,
+  peakTorque: 8000,
+  topSpeedTarget: 50,
+  torqueExponent: 0.5,
+  ebrakeFrictionSlip: 0.4,
+  steerSpeedRef: 18,
+  steerExponent: 2,
+}
+
+function buildTruck1(): Tune {
+  return clone({
+    gravityY: DEFAULTS.gravityY,
+    truck: { ...DEFAULTS.truck, ...TRUCK1_TRUCK_OVERRIDES },
+    camera: DEFAULTS.camera,
+  })
+}
+
+function ensureSeeds(s: Store): boolean {
+  let added = false
+  if (!s.profiles[TRUCK1_NAME]) {
+    s.profiles[TRUCK1_NAME] = buildTruck1()
+    added = true
+  }
+  return added
+}
+
+let store: Store = { active: DEFAULT_NAME, profiles: { [DEFAULT_NAME]: clone(DEFAULTS), [TRUCK1_NAME]: buildTruck1() } }
 
 function clone<T>(v: T): T {
   return JSON.parse(JSON.stringify(v))
@@ -65,7 +100,9 @@ async function writeStore(): Promise<void> {
 
 export async function loadTune(): Promise<void> {
   store = await readStore()
+  const seeded = ensureSeeds(store)
   apply(store.profiles[store.active])
+  if (seeded) await writeStore()
 }
 
 export async function saveTune(): Promise<void> {
