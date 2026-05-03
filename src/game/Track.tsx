@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { RigidBody } from '@react-three/rapier'
 import { config } from '../config'
-import { genSegments, type Segment } from '../systems/track-gen'
+import { genSegment, genSegments, type Segment } from '../systems/track-gen'
 import { truckBody } from './Truck'
 import { ObstacleRenderer } from './Obstacles'
 
@@ -11,20 +11,22 @@ export function Track() {
   const [segments, setSegments] = useState<Segment[]>(() =>
     genSegments(t.seed, 0, t.initialCount, 0, -t.startBuffer),
   )
-  const lastEndZ = useRef(segments[segments.length - 1].endZ)
 
   useFrame(() => {
     const body = truckBody.current
     if (!body) return
     const z = body.translation().z
-    if (z > lastEndZ.current - t.generateAhead) {
-      setSegments((prev) => {
-        const last = prev[prev.length - 1]
-        const more = genSegments(t.seed, last.index + 1, t.batchCount, last.endY, last.endZ)
-        lastEndZ.current = more[more.length - 1].endZ
-        return [...prev, ...more]
-      })
-    }
+    setSegments((prev) => {
+      const last = prev[prev.length - 1]
+      const trimIdx = prev.findIndex((s) => s.endZ > z - t.trimBehind)
+      const startIdx = trimIdx < 0 ? 0 : trimIdx
+      const needAdd = z > last.endZ - t.generateAhead
+      if (!needAdd && startIdx === 0) return prev
+      const trimmed = startIdx > 0 ? prev.slice(startIdx) : prev
+      if (!needAdd) return trimmed
+      const next = genSegment(last.index + 1, last.endY, last.endZ, t.seed)
+      return [...trimmed, next]
+    })
   })
 
   return (

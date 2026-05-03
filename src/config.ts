@@ -13,8 +13,8 @@ export const config = {
     wallHeight: 10,
     wallThickness: 1,
     initialCount: 18,
-    batchCount: 8,
     generateAhead: 220,
+    trimBehind: 80,
     startBuffer: 40,
     startEmptySegments: 2,
     surfaceColor: '#15152b',
@@ -30,7 +30,6 @@ export const config = {
     tabletopProb: 0.5,
     widthFrac: 0.2,
     sideXFrac: 0.25,
-    thickness: 0.4,
     curveSegments: 5,
     quarterpipe: {
       heightMin: 4.0,
