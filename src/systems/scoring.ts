@@ -14,7 +14,6 @@ export type ScoringState = {
   score: number
   multiplier: number
   speed: number
-  crashed: boolean
 }
 
 export type ScoringInput = {
@@ -58,7 +57,6 @@ export function initScoring(): ScoringState {
     score: 0,
     multiplier: 1,
     speed: 0,
-    crashed: false,
   }
 }
 
@@ -77,20 +75,16 @@ function clearRunMods(s: ScoringState) {
 }
 
 function crash(s: ScoringState): ScoringEvents {
+  if (s.multiplier <= 1 && s.pendingAirScore <= 0) return noEvents()
   const lossAmount = s.pendingAirScore
   const lossMul = s.multiplier
   clearRunMods(s)
-  s.crashed = true
   return { flips: 0, landed: false, landAmount: 0, crashed: true, lossAmount, lossMul }
 }
 
 export function manualReset(s: ScoringState): ScoringEvents {
-  if (s.crashed) {
-    s.crashed = false
-    return noEvents()
-  }
   const ev = crash(s)
-  s.crashed = false
+  clearRunMods(s)
   return ev
 }
 
@@ -103,7 +97,7 @@ function countFlipDelta(accum: number, counted: number, threshold: number): numb
 export function updateScoring(s: ScoringState, i: ScoringInput): ScoringEvents {
   const c = config.scoring
   s.speed = i.speed
-  if (!i.playing || s.crashed) return noEvents()
+  if (!i.playing) return noEvents()
 
   if (i.yPos < c.fallY) return crash(s)
 
