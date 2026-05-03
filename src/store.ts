@@ -54,7 +54,7 @@ const liveZero: Live = {
   airborne: false,
   pitchDeg: 0,
   rollDeg: 0,
-  timeRemaining: config.track.checkpointSeconds,
+  timeRemaining: config.track.checkpointSecondsList[0] ?? 0,
   checkpointIndex: 0,
 }
 

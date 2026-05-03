@@ -24,9 +24,14 @@ export function finishZ(): number {
   return checkpointZ(list.length - 1)
 }
 
+function legSeconds(legIndex: number): number {
+  const list = config.track.checkpointSecondsList
+  return list[legIndex] ?? list[list.length - 1] ?? 0
+}
+
 export function initCheckpoints(): CheckpointState {
   return {
-    timeRemaining: config.track.checkpointSeconds,
+    timeRemaining: legSeconds(0),
     nextIndex: 0,
     finished: false,
     expired: false,
@@ -45,11 +50,11 @@ export function updateCheckpoints(s: CheckpointState, z: number, dt: number): Ch
   const cpZ = checkpointZ(s.nextIndex)
   if (z >= cpZ) {
     s.nextIndex++
-    s.timeRemaining = config.track.checkpointSeconds
     if (s.nextIndex >= list.length) {
       s.finished = true
       return { hit: true, finished: true, expired: false }
     }
+    s.timeRemaining = legSeconds(s.nextIndex)
     return { hit: true, finished: false, expired: false }
   }
   return noTick
