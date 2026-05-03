@@ -33,7 +33,7 @@ type State = Live & {
 
 const liveZero: Live = {
   score: 0,
-  multiplier: 1,
+  multiplier: 0,
   pendingAirScore: 0,
   speed: 0,
   maxSpeed: 0,

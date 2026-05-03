@@ -119,14 +119,11 @@ export const config = {
   },
 
   scoring: {
-    flipThreshold: (270 * Math.PI) / 180,
+    flipThreshold: Math.PI,
     speedPerMul: 10,
     flipMulBonus: 10,
     airScoreRate: 1000,
-    landUpThreshold: 0,
     fallY: -10,
-    impactDrop: 6,
-    impactSmooth: 0.1,
   },
 }
 

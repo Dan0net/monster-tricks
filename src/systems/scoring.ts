@@ -9,7 +9,6 @@ export type ScoringState = {
   rollFlipsCounted: number
   flipsThisRun: number
   maxSpeed: number
-  smoothedSpeed: number
   pendingAirScore: number
   score: number
   multiplier: number
@@ -19,8 +18,9 @@ export type ScoringState = {
 export type ScoringInput = {
   dt: number
   speed: number
-  grounded: boolean
-  upY: number
+  fullyAirborne: boolean
+  fullyGrounded: boolean
+  topContact: boolean
   yPos: number
   angvelLocalX: number
   angvelLocalZ: number
@@ -52,10 +52,9 @@ export function initScoring(): ScoringState {
     rollFlipsCounted: 0,
     flipsThisRun: 0,
     maxSpeed: 0,
-    smoothedSpeed: 0,
     pendingAirScore: 0,
     score: 0,
-    multiplier: 1,
+    multiplier: 0,
     speed: 0,
   }
 }
@@ -69,13 +68,12 @@ function clearRunMods(s: ScoringState) {
   s.rollFlipsCounted = 0
   s.flipsThisRun = 0
   s.maxSpeed = 0
-  s.smoothedSpeed = 0
   s.pendingAirScore = 0
-  s.multiplier = 1
+  s.multiplier = 0
 }
 
 function crash(s: ScoringState): ScoringEvents {
-  if (s.multiplier <= 1 && s.pendingAirScore <= 0) return noEvents()
+  if (s.multiplier <= 0 && s.pendingAirScore <= 0) return noEvents()
   const lossAmount = s.pendingAirScore
   const lossMul = s.multiplier
   clearRunMods(s)
@@ -100,13 +98,11 @@ export function updateScoring(s: ScoringState, i: ScoringInput): ScoringEvents {
   if (!i.playing) return noEvents()
 
   if (i.yPos < c.fallY) return crash(s)
-
-  if (i.grounded && s.smoothedSpeed - i.speed > c.impactDrop) return crash(s)
-  s.smoothedSpeed += (i.speed - s.smoothedSpeed) * c.impactSmooth
+  if (i.topContact) return crash(s)
 
   if (i.speed > s.maxSpeed) s.maxSpeed = i.speed
 
-  if (!s.airborne && !i.grounded) {
+  if (!s.airborne && i.fullyAirborne) {
     s.airborne = true
     s.airTimeMs = 0
     s.pitchAccum = 0
@@ -129,21 +125,18 @@ export function updateScoring(s: ScoringState, i: ScoringInput): ScoringEvents {
     s.flipsThisRun += flipsThisTick
   }
 
-  s.multiplier = 1 + Math.floor(s.maxSpeed / c.speedPerMul) + s.flipsThisRun * c.flipMulBonus
+  s.multiplier = Math.floor(s.maxSpeed / c.speedPerMul) + s.flipsThisRun * c.flipMulBonus
 
-  if (s.airborne && !i.grounded) {
+  if (s.airborne && !i.fullyGrounded) {
     s.pendingAirScore += c.airScoreRate * i.dt * s.multiplier
   }
 
-  if (s.airborne && i.grounded) {
-    if (i.upY > c.landUpThreshold) {
-      const banked = s.pendingAirScore
-      s.score += banked
-      s.pendingAirScore = 0
-      s.airborne = false
-      return { flips: flipsThisTick, landed: true, landAmount: banked, crashed: false, lossAmount: 0, lossMul: 0 }
-    }
-    return crash(s)
+  if (s.airborne && i.fullyGrounded) {
+    const banked = s.pendingAirScore
+    s.score += banked
+    s.pendingAirScore = 0
+    s.airborne = false
+    return { flips: flipsThisTick, landed: true, landAmount: banked, crashed: false, lossAmount: 0, lossMul: 0 }
   }
 
   return { flips: flipsThisTick, landed: false, landAmount: 0, crashed: false, lossAmount: 0, lossMul: 0 }

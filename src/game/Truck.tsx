@@ -75,6 +75,7 @@ export function Truck() {
   )
   const scoringRef = useRef<ScoringState | null>(null)
   if (!scoringRef.current) scoringRef.current = initScoring()
+  const chassisColliderRef = useRef<RAPIER.Collider | null>(null)
   const phase = useGame((s) => s.phase)
 
   const respawn = () => {
@@ -209,11 +210,29 @@ export function Truck() {
     const lv = chassis.linvel()
     const av = chassis.angvel()
     angvelLocal.set(av.x, av.y, av.z).applyQuaternion(invChassisQ)
+
+    let topContact = false
+    const chassisCollider = chassisColliderRef.current
+    if (chassisCollider) {
+      w.contactPairsWith(chassisCollider, (other) => {
+        if (topContact) return
+        w.contactPair(chassisCollider, other, (manifold, flipped) => {
+          if (topContact) return
+          const n = manifold.numContacts()
+          for (let i = 0; i < n; i++) {
+            const p = flipped ? manifold.localContactPoint2(i) : manifold.localContactPoint1(i)
+            if (p && p.y > 0) { topContact = true; return }
+          }
+        })
+      })
+    }
+
     const ev = updateScoring(scoringRef.current!, {
       dt: w.timestep,
       speed: Math.hypot(lv.x, lv.y, lv.z),
-      grounded: groundedCount > 0,
-      upY: 1 - 2 * (cq.x * cq.x + cq.z * cq.z),
+      fullyAirborne: groundedCount === 0,
+      fullyGrounded: groundedCount === wheelCount,
+      topContact,
       yPos: ct.y,
       angvelLocalX: angvelLocal.x,
       angvelLocalZ: angvelLocal.z,
@@ -294,6 +313,7 @@ export function Truck() {
       ccd
     >
       <ConvexHullCollider
+        ref={chassisColliderRef}
         args={[bodyPts]}
         position={[0, t.chassisY / 2, 0]}
         friction={0.5}

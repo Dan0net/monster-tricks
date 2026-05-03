@@ -78,7 +78,7 @@ export function HUD() {
               +{fmt(showRun)}
             </span>
           )}
-          {showMul > 1 && (
+          {showMul > 0 && (
             <span key={`mul-${showMul}-${lossPulse}`} className={`hud-mul ${flipping && !losing ? 'hud-mul-pop' : ''}`}>
               <span className="hud-mul-x">×</span>
               <span className="hud-mul-num">{showMul}</span>
