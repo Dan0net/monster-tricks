@@ -17,6 +17,7 @@ type Live = {
 type State = Live & {
   phase: Phase
   hasPlayed: boolean
+  tuneRev: number
   flipPulse: number
   landPulse: number
   lossPulse: number
@@ -26,6 +27,7 @@ type State = Live & {
   start: () => void
   end: () => void
   setLive: (data: Live) => void
+  bumpTune: () => void
   pulseFlip: () => void
   pulseLand: (amount: number) => void
   pulseLoss: (amount: number, mul: number) => void
@@ -46,6 +48,7 @@ const liveZero: Live = {
 export const useGame = create<State>((set) => ({
   phase: 'menu',
   hasPlayed: false,
+  tuneRev: 0,
   ...liveZero,
   flipPulse: 0,
   landPulse: 0,
@@ -66,6 +69,7 @@ export const useGame = create<State>((set) => ({
   }),
   end: () => set({ phase: 'menu' }),
   setLive: (data) => set(data),
+  bumpTune: () => set((s) => ({ tuneRev: s.tuneRev + 1 })),
   pulseFlip: () => set((s) => ({ flipPulse: s.flipPulse + 1 })),
   pulseLand: (amount) => set((s) => ({ landPulse: s.landPulse + 1, lastLand: amount })),
   pulseLoss: (amount, mul) => set((s) => ({ lossPulse: s.lossPulse + 1, lastLoss: amount, lastLossMul: mul })),

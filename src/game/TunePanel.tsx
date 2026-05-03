@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { config, type TruckTunable, type CameraTunable, type WorldTunable } from '../config'
 import { resetTune, saveTune } from '../systems/tune-storage'
 import { ProfileBar } from './ProfileBar'
+import { useGame } from '../store'
 
 type Field<K extends string> = { key: K; min: number; max: number; step: number }
 
@@ -115,6 +116,7 @@ export function TunePanel() {
   const saveTimer = useRef<number | null>(null)
   const bump = () => {
     setN((n) => n + 1)
+    useGame.getState().bumpTune()
     if (saveTimer.current != null) clearTimeout(saveTimer.current)
     saveTimer.current = window.setTimeout(() => {
       saveTimer.current = null

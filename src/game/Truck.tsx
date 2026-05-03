@@ -14,36 +14,15 @@ import { config } from '../config'
 import { input } from '../systems/input'
 import { initScoring, manualReset, updateScoring, type ScoringEvents, type ScoringState } from '../systems/scoring'
 import { useGame } from '../store'
+import { Chassis } from './Chassis'
+import { Wheel } from './Wheel'
+import { Suspension } from './Suspension'
+import { wheelCs, buildEllipsoidPoints } from '../systems/truck-geometry'
 
 const susDir = { x: 0, y: -1, z: 0 }
 const axleDir = { x: -1, y: 0, z: 0 }
 const identityQ = { x: 0, y: 0, z: 0, w: 1 }
 const wheelCount = 4
-
-function wheelCs(i: number, includeWidth = false) {
-  const t = config.truck
-  const x = (t.chassisX / 2) * t.wheelTrack + t.wheelWidth / 2 * (includeWidth ? 1 : 0)
-  const z = (t.chassisZ / 2) * t.wheelBase
-  const sx = i === 0 || i === 2 ? 1 : -1
-  const sz = i === 0 || i === 1 ? 1 : -1
-  return { x: sx * x, y: t.wheelY, z: sz * z }
-}
-
-function buildEllipsoidPoints(rx: number, ry: number, rz: number): Float32Array {
-  const segments = 16
-  const rings = 10
-  const pts: number[] = [0, ry, 0, 0, -ry, 0]
-  for (let r = 1; r < rings; r++) {
-    const phi = (r / rings) * Math.PI
-    const y = ry * Math.cos(phi)
-    const ringR = Math.sin(phi)
-    for (let s = 0; s < segments; s++) {
-      const theta = (s / segments) * Math.PI * 2
-      pts.push(rx * ringR * Math.cos(theta), y, rz * ringR * Math.sin(theta))
-    }
-  }
-  return new Float32Array(pts)
-}
 
 export const truckBody = { current: null as RapierRigidBody | null }
 
@@ -64,11 +43,10 @@ export function Truck() {
   const chassisRef = useRef<RapierRigidBody>(null!)
   const ctrlRef = useRef<RAPIER.DynamicRayCastVehicleController | null>(null)
   const wheelRefs = useRef<(THREE.Group | null)[]>([])
-  const chassisMeshRef = useRef<THREE.Mesh>(null!)
-  const cabMeshRef = useRef<THREE.Mesh>(null!)
-  const bodyMeshRef = useRef<THREE.Mesh>(null!)
   const applied = useRef(0)
   const appliedSteer = useRef(0)
+  const wheelOmega = useRef<number[]>([0, 0, 0, 0])
+  const spinAccum = useRef<number[]>([0, 0, 0, 0])
   const wheelShape = useMemo(
     () => new rapier.Cylinder(config.truck.wheelWidth / 2, config.truck.wheelRadius),
     [rapier],
@@ -77,6 +55,7 @@ export function Truck() {
   if (!scoringRef.current) scoringRef.current = initScoring()
   const chassisColliderRef = useRef<RAPIER.Collider | null>(null)
   const phase = useGame((s) => s.phase)
+  useGame((s) => s.tuneRev)
 
   const respawn = () => {
     const chassis = chassisRef.current
@@ -207,6 +186,16 @@ export function Truck() {
 
     let groundedCount = 0
     for (let i = 0; i < wheelCount; i++) if (ctrl.wheelIsInContact(i)) groundedCount++
+    const fwdSpeed = ctrl.currentVehicleSpeed()
+    const targetOmega = fwdSpeed / t.wheelRadius
+    for (let i = 0; i < wheelCount; i++) {
+      if (ctrl.wheelIsInContact(i)) {
+        wheelOmega.current[i] = targetOmega
+      } else {
+        wheelOmega.current[i] = THREE.MathUtils.damp(wheelOmega.current[i], 0, t.airSpinDamp, w.timestep)
+      }
+      spinAccum.current[i] += wheelOmega.current[i] * w.timestep
+    }
     const lv = chassis.linvel()
     const av = chassis.angvel()
     angvelLocal.set(av.x, av.y, av.z).applyQuaternion(invChassisQ)
@@ -246,8 +235,7 @@ export function Truck() {
       const cp = wheelCs(i)
       const sus = ctrl.wheelSuspensionLength(i) ?? t.suspensionRest
       g.position.set(cp.x, cp.y - sus, cp.z)
-      g.rotation.set(ctrl.wheelRotation(i) ?? 0, ctrl.wheelSteering(i) ?? 0, 0, 'YXZ')
-      g.scale.set(t.wheelWidth, t.wheelRadius, t.wheelRadius)
+      g.rotation.set(spinAccum.current[i], ctrl.wheelSteering(i) ?? 0, 0, 'YXZ')
 
       wheelWorld.copy(g.position).applyQuaternion(chassisQ).add(chassisP)
       wheelShape.halfHeight = t.wheelWidth / 2
@@ -284,24 +272,14 @@ export function Truck() {
       pitchDeg: (s.pitchAccum * 180) / Math.PI,
       rollDeg: (s.rollAccum * 180) / Math.PI,
     })
-    const t = config.truck
-    if (chassisMeshRef.current) {
-      chassisMeshRef.current.scale.set(t.chassisX / 2, t.chassisY, t.chassisZ / 2)
-    }
-    if (cabMeshRef.current) {
-      cabMeshRef.current.scale.set(t.chassisX * 0.7, t.chassisY * 0.7, t.chassisZ * 0.45)
-      cabMeshRef.current.position.set(0, t.chassisY * 0.85, -0.4)
-    }
-    if (bodyMeshRef.current) {
-      bodyMeshRef.current.position.set(0, t.chassisY / 2, 0)
-      bodyMeshRef.current.scale.set(t.chassisX / 2, t.cabY, t.chassisZ / 2)
-    }
   })
 
   const t = config.truck
+  const domeHalfY = (t.chassisY + t.cabY) / 2
+  const domeCenterY = t.cabY / 2
   const bodyPts = useMemo(
-    () => buildEllipsoidPoints(t.chassisX / 2, t.cabY, t.chassisZ / 2),
-    [t.chassisX, t.cabY, t.chassisZ],
+    () => buildEllipsoidPoints(t.chassisX / 2, domeHalfY, t.chassisZ / 2),
+    [t.chassisX, t.chassisZ, domeHalfY],
   )
   return (
     <RigidBody
@@ -315,28 +293,15 @@ export function Truck() {
       <ConvexHullCollider
         ref={chassisColliderRef}
         args={[bodyPts]}
-        position={[0, t.chassisY / 2, 0]}
+        position={[0, domeCenterY, 0]}
         friction={0.5}
         density={0}
       />
-      <mesh ref={bodyMeshRef} renderOrder={1}>
-        <sphereGeometry args={[1, 18, 12]} />
-        <meshBasicMaterial color={'white'} wireframe transparent />
-      </mesh>
-      <mesh ref={chassisMeshRef} castShadow>
-        <cylinderGeometry args={[1, 1, 1, 24]} />
-        <meshStandardMaterial color={t.color} emissive={t.color} emissiveIntensity={0.35} />
-      </mesh>
-      <mesh ref={cabMeshRef} castShadow>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="#1a1a2e" emissive={t.wheelGlow} emissiveIntensity={0.15} />
-      </mesh>
+      <Chassis />
+      <Suspension wheelRefs={wheelRefs} />
       {Array.from({ length: wheelCount }, (_, i) => (
         <group key={i} ref={(el) => { wheelRefs.current[i] = el }}>
-          <mesh castShadow rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[1, 1, 1, 18]} />
-            <meshStandardMaterial color={t.wheelColor} emissive={t.wheelGlow} emissiveIntensity={0.2} />
-          </mesh>
+          <Wheel />
         </group>
       ))}
     </RigidBody>
