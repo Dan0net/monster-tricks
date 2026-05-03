@@ -16,6 +16,15 @@ type Live = {
   rollDeg: number
   timeRemaining: number
   checkpointIndex: number
+  slip0: number
+  slip1: number
+  slip2: number
+  slip3: number
+  yawRate: number
+  pitchRate: number
+  rollRate: number
+  lateralG: number
+  groundedCount: number
 }
 
 type State = Live & {
@@ -56,6 +65,15 @@ const liveZero: Live = {
   rollDeg: 0,
   timeRemaining: config.track.checkpointSecondsList[0] ?? 0,
   checkpointIndex: 0,
+  slip0: 0,
+  slip1: 0,
+  slip2: 0,
+  slip3: 0,
+  yawRate: 0,
+  pitchRate: 0,
+  rollRate: 0,
+  lateralG: 0,
+  groundedCount: 0,
 }
 
 export const useGame = create<State>((set) => ({

@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useGame } from './store'
 import { Game } from './game/Game'
 import { HUD } from './game/HUD'
+import { DebugHUD } from './game/DebugHUD'
 import { TunePanel } from './game/TunePanel'
 import { HighScores } from './game/HighScores'
 import { OutOfTime } from './game/OutOfTime'
@@ -32,6 +33,7 @@ export default function App() {
     <>
       <Game />
       <HUD />
+      <DebugHUD />
       <TunePanel />
       {phase === 'menu' && (
         <div className="menu" onClick={onPlay}>

@@ -95,7 +95,7 @@ export const config = {
   },
 
   truck: {
-    mass: 1010,
+    mass: 1000,
     chassisX: 2.2,
     chassisY: 0.7,
     chassisZ: 4.0,
@@ -114,7 +114,7 @@ export const config = {
     bodyY: 0.25,
 
     comX: 0,
-    comY: -1.5,
+    comY: -0.3,
     comZ: 0,
     inertiaPitch: 5160,
     inertiaYaw: 5480,
@@ -143,28 +143,30 @@ export const config = {
     },
 
     suspensionRest: 1.5,
-    maxTravel: 1.1,
-    stiffness: 21,
-    compression: 5.2,
-    relaxation: 0,
+    maxTravel: 1.5,
+    stiffness: 16,
+    compression: 4,
+    relaxation: 4,
     maxSuspensionForce: 904000,
-    frictionSlip: 12,
+    frictionSlip: 8,
 
-    engineForce: 2980,
+    peakTorque: 8000,
+    topSpeedTarget: 22,
     reverseScale: 0.5,
     accelRate: 20,
-    ebrakeForce: 200,
-    ebrakeFrictionSlip: 1.0,
+    ebrakeForce: 5000,
+    ebrakeFrictionSlip: 0.4,
     ebrakeWheels: [2, 3] as number[],
-    maxSteer: 0.55,
-    maxSteerHighSpeed: 0.12,
-    steerSpeedRef: 25,
+    maxSteer: 0.7,
+    maxSteerHighSpeed: 0.06,
+    steerSpeedRef: 12,
     steerRate: 30,
 
     linearDamping: 0.08,
     angularDamping: 0.6,
 
-    steerWheels: [0, 1] as number[],
+    steerWheels: [0, 1, 2, 3] as number[],
+    rearSteerPhase: -1,
   },
 
   scoring: {
@@ -184,10 +186,12 @@ export type TruckTunable =
   | 'comX' | 'comY' | 'comZ'
   | 'inertiaPitch' | 'inertiaYaw' | 'inertiaRoll'
   | 'wheelRadius' | 'wheelWidth' | 'wheelTrack' | 'wheelBase' | 'wheelY'
-  | 'engineForce' | 'accelRate' | 'reverseScale' | 'ebrakeForce' | 'ebrakeFrictionSlip' | 'maxSteer' | 'maxSteerHighSpeed' | 'steerSpeedRef' | 'steerRate'
+  | 'peakTorque' | 'topSpeedTarget' | 'accelRate' | 'reverseScale' | 'ebrakeForce' | 'ebrakeFrictionSlip' | 'maxSteer' | 'maxSteerHighSpeed' | 'steerSpeedRef' | 'steerRate' | 'rearSteerPhase'
   | 'stiffness' | 'compression' | 'relaxation' | 'maxTravel' | 'suspensionRest'
   | 'maxSuspensionForce' | 'frictionSlip'
   | 'linearDamping' | 'angularDamping'
+  | 'bevelRadius' | 'bodyXFrac' | 'bodyZFrac' | 'cabXFrac' | 'cabZFrac' | 'cabZOffset' | 'bodyY'
+  | 'treadBlocks' | 'treadAxleOffsetFrac' | 'treadAxialFrac' | 'treadChevronAngle' | 'spokes' | 'airSpinDamp'
 
 export type CameraTunable =
   | 'fov'

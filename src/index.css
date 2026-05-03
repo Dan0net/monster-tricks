@@ -158,9 +158,17 @@ html, body, #root {
 
 .profile-bar {
   display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 6px;
-  margin-bottom: 8px;
+  grid-template-columns: 1fr auto auto auto auto;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.profile-bar button {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .profile-bar select {
   background: rgba(0, 0, 0, 0.4);
@@ -176,7 +184,7 @@ html, body, #root {
   color: var(--accent2);
   border: 1px solid rgba(45, 212, 255, 0.4);
   font: inherit;
-  padding: 4px 10px;
+  padding: 0;
   cursor: pointer;
 }
 .profile-bar button:hover { background: rgba(45, 212, 255, 0.25); }
@@ -553,4 +561,68 @@ html, body, #root {
   40% { transform: translate(6px, -2px); }
   60% { transform: translate(-4px, 4px); }
   80% { transform: translate(3px, -3px); }
+}
+
+.debug-hud {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  z-index: 5;
+  pointer-events: none;
+  user-select: none;
+  background: rgba(6, 6, 12, 0.65);
+  border: 1px solid rgba(45, 212, 255, 0.25);
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.85);
+  min-width: 110px;
+}
+.debug-hud .row {
+  display: grid;
+  grid-template-columns: 32px 1fr 28px;
+  gap: 4px;
+  align-items: baseline;
+  line-height: 1.4;
+}
+.debug-hud .row > span:first-child { opacity: 0.5; text-transform: uppercase; letter-spacing: 0.1em; font-size: 10px; }
+.debug-hud .row > b { text-align: right; font-weight: 700; }
+.debug-hud .row > span:last-child { opacity: 0.4; font-size: 10px; }
+.debug-hud .slip-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 8px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  font-weight: 700;
+}
+
+
+.tune label > span[data-tip] {
+  position: relative;
+  cursor: help;
+  text-decoration: underline dotted rgba(255, 255, 255, 0.25);
+  text-underline-offset: 2px;
+}
+.tune label > span[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  z-index: 1000;
+  right: calc(100% + 6px);
+  top: 0;
+  width: 240px;
+  padding: 6px 8px;
+  background: rgba(6, 6, 12, 0.97);
+  border: 1px solid rgba(45, 212, 255, 0.5);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  pointer-events: none;
+  text-decoration: none;
+  letter-spacing: 0;
+  text-transform: none;
 }

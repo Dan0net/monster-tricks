@@ -53,6 +53,9 @@ export function Truck() {
   const appliedSteer = useRef(0)
   const wheelOmega = useRef<number[]>([0, 0, 0, 0])
   const spinAccum = useRef<number[]>([0, 0, 0, 0])
+  const wheelRollSpeed = useRef<number[]>([0, 0, 0, 0])
+  const prevLinvel = useRef({ x: 0, y: 0, z: 0 })
+  const debugRef = useRef({ slip: [0, 0, 0, 0], yawRate: 0, pitchRate: 0, rollRate: 0, lateralG: 0, groundedCount: 0 })
   const wheelShape = useMemo(
     () => new rapier.Cylinder(config.truck.wheelWidth / 2, config.truck.wheelRadius),
     [rapier],
@@ -151,10 +154,14 @@ export function Truck() {
     chassis.setAngularDamping(t.angularDamping)
 
     const raw = playing ? input.throttle : 0
-    const target = raw >= 0 ? raw : raw * t.reverseScale
+    const shaped = raw * Math.abs(raw)
+    const target = shaped >= 0 ? shaped : shaped * t.reverseScale
     applied.current = THREE.MathUtils.damp(applied.current, target, t.accelRate, dt)
 
-    const force = applied.current * t.engineForce
+    const fwdSpeed = ctrl.currentVehicleSpeed()
+    const fwdRatio = fwdSpeed / t.topSpeedTarget
+    const torqueScale = THREE.MathUtils.clamp(1 - Math.sign(applied.current) * fwdRatio, 0, 1)
+    const force = applied.current * t.peakTorque * torqueScale
     const ebrakeOn = playing && input.ebrake > 0
     const lv = chassis.linvel()
     const speed = Math.hypot(lv.x, lv.z)
@@ -178,7 +185,10 @@ export function Truck() {
       ctrl.setWheelRadius(i, t.wheelRadius)
       ctrl.setWheelMaxSuspensionForce(i, t.maxSuspensionForce)
     }
-    for (const i of t.steerWheels) ctrl.setWheelSteering(i, steer)
+    for (const i of t.steerWheels) {
+      const phase = i >= 2 ? t.rearSteerPhase : 1
+      ctrl.setWheelSteering(i, phase * steer)
+    }
     ctrl.updateVehicle(dt)
   })
 
@@ -197,6 +207,7 @@ export function Truck() {
 
     let groundedCount = 0
     for (let i = 0; i < wheelCount; i++) if (ctrl.wheelIsInContact(i)) groundedCount++
+    const ebrakeOn = useGame.getState().phase === 'playing' && input.ebrake > 0
 
     const lv = chassis.linvel()
     const av = chassis.angvel()
@@ -211,12 +222,35 @@ export function Truck() {
       const steer = ctrl.wheelSteering(i) ?? 0
       fwdWorldV.set(Math.sin(steer), 0, Math.cos(steer)).applyQuaternion(chassisQ)
       const rollSpeed = velAtHub.dot(fwdWorldV)
-      if (ctrl.wheelIsInContact(i)) {
+      wheelRollSpeed.current[i] = rollSpeed
+      const isEbrakeWheel = ebrakeOn && t.ebrakeWheels.includes(i)
+      if (isEbrakeWheel) {
+        wheelOmega.current[i] = 0
+      } else if (ctrl.wheelIsInContact(i)) {
         wheelOmega.current[i] = rollSpeed / t.wheelRadius
       } else {
         wheelOmega.current[i] = THREE.MathUtils.damp(wheelOmega.current[i], 0, t.airSpinDamp, w.timestep)
       }
       spinAccum.current[i] += wheelOmega.current[i] * w.timestep
+    }
+
+    const dbg = debugRef.current
+    dbg.groundedCount = groundedCount
+    dbg.yawRate = (angvelLocal.y * 180) / Math.PI
+    dbg.pitchRate = (angvelLocal.x * 180) / Math.PI
+    dbg.rollRate = (angvelLocal.z * 180) / Math.PI
+    const dt = w.timestep
+    const ax = (lv.x - prevLinvel.current.x) / dt
+    const az = (lv.z - prevLinvel.current.z) / dt
+    fwdWorldV.set(1, 0, 0).applyQuaternion(chassisQ)
+    dbg.lateralG = (ax * fwdWorldV.x + az * fwdWorldV.z) / 9.81
+    prevLinvel.current.x = lv.x
+    prevLinvel.current.y = lv.y
+    prevLinvel.current.z = lv.z
+    for (let i = 0; i < wheelCount; i++) {
+      const v = wheelRollSpeed.current[i]
+      const wheelLinear = wheelOmega.current[i] * t.wheelRadius
+      dbg.slip[i] = (wheelLinear - v) / Math.max(Math.abs(v), 0.5)
     }
 
     let topContact = false
@@ -304,6 +338,7 @@ export function Truck() {
       }
     }
 
+    const dbg = debugRef.current
     g.setLive({
       score: s.score,
       multiplier: s.multiplier,
@@ -316,6 +351,15 @@ export function Truck() {
       rollDeg: (s.rollAccum * 180) / Math.PI,
       timeRemaining: cp.timeRemaining,
       checkpointIndex: cp.nextIndex,
+      slip0: dbg.slip[0],
+      slip1: dbg.slip[1],
+      slip2: dbg.slip[2],
+      slip3: dbg.slip[3],
+      yawRate: dbg.yawRate,
+      pitchRate: dbg.pitchRate,
+      rollRate: dbg.rollRate,
+      lateralG: dbg.lateralG,
+      groundedCount: dbg.groundedCount,
     })
 
     if (result === 'finished') g.finish(s.score)

@@ -4,7 +4,7 @@ import {
   switchProfile, createProfile, deleteProfile, exportTune,
 } from '../systems/tune-storage'
 
-export function ProfileBar({ onChange }: { onChange: () => void }) {
+export function ProfileBar({ onChange, onReset }: { onChange: () => void; onReset: () => void }) {
   const [active, setActive] = useState(getActiveProfile())
   const [names, setNames] = useState(listProfiles())
 
@@ -47,6 +47,7 @@ export function ProfileBar({ onChange }: { onChange: () => void }) {
       <button onClick={onNew} title="Save current as new profile">+</button>
       <button onClick={onDelete} disabled={names.length <= 1} title="Delete current profile">✕</button>
       <button onClick={onCopy} title="Copy config to clipboard">{copied ? '✓' : '⧉'}</button>
+      <button onClick={onReset} title="Reset all to defaults">↺</button>
     </div>
   )
 }
