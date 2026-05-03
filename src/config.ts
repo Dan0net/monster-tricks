@@ -114,9 +114,9 @@ export const config = {
     bodyY: 0.25,
 
     comX: 0,
-    comY: -0.3,
+    comY: -0.1,
     comZ: 0,
-    inertiaPitch: 5160,
+    inertiaPitch: 1500,
     inertiaYaw: 5480,
     inertiaRoll: 10920,
 
@@ -144,9 +144,9 @@ export const config = {
 
     suspensionRest: 1.5,
     maxTravel: 1.5,
-    stiffness: 16,
-    compression: 4,
-    relaxation: 4,
+    stiffness: 14,
+    compression: 2.5,
+    relaxation: 2.5,
     maxSuspensionForce: 904000,
     frictionSlip: 8,
 
@@ -156,7 +156,7 @@ export const config = {
     accelRate: 20,
     ebrakeForce: 5000,
     ebrakeFrictionSlip: 0.4,
-    ebrakeWheels: [2, 3] as number[],
+    ebrakeWheels: [0, 1, 2, 3] as number[],
     maxSteer: 0.7,
     maxSteerHighSpeed: 0.06,
     steerSpeedRef: 12,

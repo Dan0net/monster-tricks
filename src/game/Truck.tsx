@@ -158,12 +158,15 @@ export function Truck() {
     const target = shaped >= 0 ? shaped : shaped * t.reverseScale
     applied.current = THREE.MathUtils.damp(applied.current, target, t.accelRate, dt)
 
-    const fwdSpeed = ctrl.currentVehicleSpeed()
-    const fwdRatio = fwdSpeed / t.topSpeedTarget
-    const torqueScale = THREE.MathUtils.clamp(1 - Math.sign(applied.current) * fwdRatio, 0, 1)
+    const lv = chassis.linvel()
+    const cq = chassis.rotation()
+    chassisQ.set(cq.x, cq.y, cq.z, cq.w)
+    fwdWorldV.set(0, 0, 1).applyQuaternion(chassisQ)
+    const fwdSpeed = lv.x * fwdWorldV.x + lv.y * fwdWorldV.y + lv.z * fwdWorldV.z
+    const sa = Math.sign(applied.current)
+    const torqueScale = sa === 0 ? 0 : THREE.MathUtils.clamp(1 - (sa * fwdSpeed) / t.topSpeedTarget, 0, 1)
     const force = applied.current * t.peakTorque * torqueScale
     const ebrakeOn = playing && input.ebrake > 0
-    const lv = chassis.linvel()
     const speed = Math.hypot(lv.x, lv.z)
     const k = THREE.MathUtils.clamp(speed / t.steerSpeedRef, 0, 1)
     const effectiveMaxSteer = t.maxSteer + (t.maxSteerHighSpeed - t.maxSteer) * k
@@ -227,7 +230,8 @@ export function Truck() {
       if (isEbrakeWheel) {
         wheelOmega.current[i] = 0
       } else if (ctrl.wheelIsInContact(i)) {
-        wheelOmega.current[i] = rollSpeed / t.wheelRadius
+        const targetOmega = Math.abs(rollSpeed) > 0.1 ? rollSpeed / t.wheelRadius : 0
+        wheelOmega.current[i] = THREE.MathUtils.damp(wheelOmega.current[i], targetOmega, 12, w.timestep)
       } else {
         wheelOmega.current[i] = THREE.MathUtils.damp(wheelOmega.current[i], 0, t.airSpinDamp, w.timestep)
       }
