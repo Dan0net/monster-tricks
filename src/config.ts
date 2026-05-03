@@ -180,6 +180,16 @@ export const config = {
     airScoreRate: 1000,
     fallY: -10,
   },
+
+  mobile: {
+    joySize: 140,
+    joyKnobSize: 64,
+    joyDeadzone: 0.12,
+    buttonSize: 88,
+    buttonGap: 12,
+    edgePad: 24,
+    bottomPad: 28,
+  },
 }
 
 export type WorldTunable = 'gravityY'

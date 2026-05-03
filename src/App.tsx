@@ -6,6 +6,9 @@ import { DebugHUD } from './game/DebugHUD'
 import { TunePanel } from './game/TunePanel'
 import { HighScores } from './game/HighScores'
 import { OutOfTime } from './game/OutOfTime'
+import { MobileControls } from './game/MobileControls'
+
+const isTouch = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
 
 export default function App() {
   const phase = useGame((s) => s.phase)
@@ -13,6 +16,7 @@ export default function App() {
   const end = useGame((s) => s.end)
 
   useEffect(() => {
+    if (isTouch) return
     const onLockChange = () => {
       if (!document.pointerLockElement && useGame.getState().phase === 'playing') end()
     }
@@ -21,11 +25,12 @@ export default function App() {
   }, [end])
 
   useEffect(() => {
+    if (isTouch) return
     if (phase !== 'playing') document.exitPointerLock?.()
   }, [phase])
 
   const onPlay = async () => {
-    await document.body.requestPointerLock?.().catch(() => {})
+    if (!isTouch) await document.body.requestPointerLock?.().catch(() => {})
     start()
   }
 
@@ -33,8 +38,12 @@ export default function App() {
     <>
       <Game />
       <HUD />
-      <DebugHUD />
-      <TunePanel />
+      {!isTouch && <DebugHUD />}
+      {!isTouch && <TunePanel />}
+      <MobileControls />
+      {isTouch && phase === 'playing' && (
+        <button className="mobile-exit" onClick={end} aria-label="exit">×</button>
+      )}
       {phase === 'menu' && (
         <div className="menu" onClick={onPlay}>
           <div className="menu-inner">
@@ -42,7 +51,9 @@ export default function App() {
             <h1>Tricks</h1>
             <button className="play">Play</button>
           </div>
-          <div className="hint">WASD / Arrows · Mouse to look · R to reset · Esc to exit</div>
+          <div className="hint">
+            {isTouch ? 'Tap Play · Joystick to steer · Gas / Brake / Reverse' : 'WASD / Arrows · Mouse to look · R to reset · Esc to exit'}
+          </div>
         </div>
       )}
       {phase === 'finished' && <HighScores onPlayAgain={onPlay} />}
